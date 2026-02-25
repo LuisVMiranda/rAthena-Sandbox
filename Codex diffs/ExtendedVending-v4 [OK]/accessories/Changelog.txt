@@ -1,0 +1,28 @@
+//===== RSM Mod ==============================================
+//= Changelog
+//===== Por: =================================================
+//= RomuloSM (sbk_)
+//===== Versao Atual: ========================================
+//= 4.0
+//===== Descrio: ===========================================
+//= Notas de atualizaes realizadas no projeto.
+//===== Comentrios Adicional: ===============================
+//= 1.0 Primeira verso.[RomuloSM]
+//= 2.0 Atualizao para rAthena 2021. [RomuloSM]
+//= 3.0 Atualizao para rAthena 2022. [RomuloSM]
+//= 4.0 Atualizao para rAthena 2023. [RomuloSM]
+//===== Contato: =============================================
+//= Email: romulodevel@gmail.com
+//= Facebook: https://facebook.com/RomuloDevel
+//= Site: https://rsmdeveloper.com.br
+//============================================================
+16/07/2023 (4.0.00)
+	* Atualizao de acordo com rAthena 2023.
+
+28/09/2021 (2.0.00)
+	* Atualizao de acordo com o rACSDMod v5.
+
+24/04/2021 (1.0.00)
+	* Iniciado primeira verso do Sistema, composto por:
+		- Extended Vending v4.0.00
+		- Auto Vending v1.0.00

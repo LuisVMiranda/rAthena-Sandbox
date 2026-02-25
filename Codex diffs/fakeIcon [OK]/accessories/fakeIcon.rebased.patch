@@ -1,0 +1,38 @@
+diff --git a/src/map/script.cpp b/src/map/script.cpp
+index 6ab5524..7451d0e 100644
+--- a/src/map/script.cpp
++++ b/src/map/script.cpp
+@@ -13387,6 +13387,25 @@ static int32 buildin_addrid_sub(block_list *bl,va_list ap)
+ 	return 0;
+ }
+ 
++/*
++* fakeIcon
++* fakeIcon(CHAR_ID,ICON_ID,TIME,STATE)
++*/
++BUILDIN_FUNC(fakeIcon)
++{
++	TBL_PC* sd = map_charid2sd(script_getnum(st, 2));
++	int32 icon = script_getnum(st, 3);
++	int32 time = script_getnum(st, 4);
++	bool state = (script_getnum(st, 5) == 1);
++
++	if (sd == nullptr)
++		return SCRIPT_CMD_FAILURE;
++
++	clif_status_change(&sd->bl, static_cast<sc_type>(icon), state, static_cast<t_tick>(time), 0, 0, 0);
++
++	return SCRIPT_CMD_SUCCESS;
++}
++
+ BUILDIN_FUNC(addrid)
+ {
+ 	struct s_mapiterator* iter;
+@@ -27855,6 +27874,7 @@ struct script_function buildin_func[] = {
+ 	BUILDIN_DEF(select,"s*"), //for future jA script compatibility
+ 	BUILDIN_DEF(prompt,"s*"),
+ 	//
++	BUILDIN_DEF(fakeIcon,"iiii"),
+ 	BUILDIN_DEF(goto,"l"),
+ 	BUILDIN_DEF(callsub,"l*"),
+ 	BUILDIN_DEF(callfunc,"s*"),

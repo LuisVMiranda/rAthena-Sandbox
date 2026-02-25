@@ -1,0 +1,158 @@
+diff --git a/doc/item_bonus.txt b/doc/item_bonus.txt
+index e525611..a85774a 100644
+--- a/doc/item_bonus.txt
++++ b/doc/item_bonus.txt
+@@ -201,6 +201,9 @@ Atk/Def
+ -------
+ bonus2 bSkillAtk,sk,n;    		Increases damage of skill sk by n%
+ bonus bSkillRatio,n;			Adds n to the skillratio of all attacks/skills that use it
++bonus bMonsterScholar,n;		Progressive PvE damage bonus by race using permanent variable MobKillCount_<RaceID>
++					+0.1% Physical and Magical damage per 1000 kills (max +5% per race), not applied to RC_PLAYER_HUMAN/RC_PLAYER_DORAM
++					DIFF requirement: `Codex diffs/Bonus-bMonsterScholar [OK]/bMonsterScholar.diff`
+ bonus bShortAtkRate,n;			Increases damage of short ranged attacks by n%
+ bonus bLongAtkRate,n;     		Increases damage of long ranged attacks by n%
+ bonus bCritAtkRate,n;     		Increases critical damage by +n%
+@@ -223,6 +226,9 @@ Healing
+ -------
+ bonus bHealPower,n;						Increases heal amount of all heal skills by n%
+ bonus bHealPower2,n;					Increases heal amount if you are healed by any skills by n%
++bonus bCampfireHeal,n;				Adjusts campfire healing ticks by n%
++bonus bCampfireRate,n;				Alias of bCampfireHeal (same behavior)
++					DIFF requirement: custom Campfire system patch (SP_CAMPFIRE_HEAL_RATE)
+ bonus2 bSkillHeal,sk,n;					Increases heal amount of skill sk by n%
+ bonus2 bSkillHeal2,sk,n;				Increases heal amount if you are healed by skill sk by n%
+ bonus bAddItemHealRate,n;				Increases HP recovered by n% for healing items
+diff --git a/src/map/battle.cpp b/src/map/battle.cpp
+index f141b40..799ade8 100644
+--- a/src/map/battle.cpp
++++ b/src/map/battle.cpp
+@@ -32,6 +32,7 @@
+ #include "path.hpp"
+ #include "pc.hpp"
+ #include "pc_groups.hpp"
++#include "script.hpp" // add_str
+ #include "pet.hpp"
+ #include "./skills/skill_impl.hpp"
+ 
+@@ -50,6 +51,42 @@ int32 battle_get_magic_element( const block_list* src, const block_list* target,
+ int32 battle_get_misc_element( const block_list* src, const block_list* target, uint16 skill_id, uint16 skill_lv, int32 mflag );
+ static void battle_calc_defense_reduction( Damage* wd, block_list* src, block_list* target, uint16 skill_id, uint16 skill_lv );
+ 
++// Hook: Progressive PvE knowledge bonus based on permanent per-race kill counters.
++static int32 battle_get_monster_scholar_bonus( const map_session_data& sd, e_race race ){
++	if( sd.bonus.monster_scholar <= 0 )
++		return 0;
++
++	if( race < 0 || race >= RC_MAX )
++		return 0;
++
++	// PvE only: player races are explicitly excluded.
++	if( race == RC_PLAYER_HUMAN || race == RC_PLAYER_DORAM )
++		return 0;
++
++	static int64 kill_vars[RC_MAX] = {};
++	static bool initialized = false;
++
++	if( !initialized ){
++		for( int32 i = 0; i < RC_MAX; i++ ){
++			char var_name[32];
++			safesnprintf( var_name, sizeof( var_name ), "MobKillCount_%d", i );
++			kill_vars[i] = add_str( var_name );
++		}
++		initialized = true;
++	}
++
++	const int64 kill_count = pc_readregistry( &sd, kill_vars[race] );
++	if( kill_count <= 0 )
++		return 0;
++
++	// +0.1% per 1000 kills, capped at +5.0% (50 steps). Return value is in 0.1% units.
++	int32 steps = static_cast<int32>( kill_count / 1000 );
++	if( steps > 50 )
++		steps = 50;
++
++	return steps * sd.bonus.monster_scholar;
++}
++
+ /**
+  * Returns the current/list skill used by the bl
+  * @param bl
+@@ -1713,6 +1750,13 @@ int64 battle_calc_damage(block_list *src,block_list *bl,struct Damage *d,int64 d
+ 
+ 	status_change* tsc = status_get_sc(bl); //check target status
+ 
++	if( tsd != nullptr && damage > 0 && ( flag&( BF_WEAPON | BF_MAGIC ) ) != 0 ){
++		int32 scholar_bonus = battle_get_monster_scholar_bonus( *tsd, static_cast<e_race>( status_get_race( bl ) ) );
++
++		if( scholar_bonus > 0 )
++			damage += damage * scholar_bonus / 1000;
++	}
++
+ 	// Nothing can reduce the damage, but Safety Wall and Millennium Shield can block it completely.
+ 	// So can defense sphere's but what the heck is that??? [Rytech]
+ 	if (skill_id == SJ_NOVAEXPLOSING && !(tsc && (tsc->getSCE(SC_SAFETYWALL) || tsc->getSCE(SC_MILLENNIUMSHIELD)))) {
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index a8ec9e9..70e4bc1 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -594,7 +594,8 @@ enum _sp {
+ 	SP_NON_CRIT_ATK_RATE, //2108
+ 	SP_CAMPFIRE_HEAL_RATE, //2109
+ 	SP_PARTY_SYNERGY, //2110
+-	SP_FRIENDLY_FIRE //2111
++	SP_FRIENDLY_FIRE, //2111
++	SP_MONSTER_SCHOLAR //2112
+ };
+ 
+ enum _look {
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index e0e7d2e..7ad2f12 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -4447,6 +4447,10 @@ void pc_bonus(map_session_data *sd,int32 type,int32 val)
+ 			if (sd->state.lr_flag != LR_FLAG_ARROW)
+ 				sd->bonus.campfire_heal_rate += val;
+ 			break;
++		case SP_MONSTER_SCHOLAR:
++			if (sd->state.lr_flag != LR_FLAG_ARROW)
++				sd->bonus.monster_scholar += val;
++			break;
+ 		case SP_ADD_ITEM_HEAL_RATE:
+ 			if (sd->state.lr_flag != LR_FLAG_ARROW)
+ 				sd->bonus.itemhealrate2 += val;
+@@ -10452,6 +10456,7 @@ int64 pc_readparam( const map_session_data* sd, int64 type )
+ 		case SP_ADD_HEAL_RATE:   val = sd->bonus.add_heal_rate; break;
+ 		case SP_ADD_HEAL2_RATE:  val = sd->bonus.add_heal2_rate; break;
+ 		case SP_CAMPFIRE_HEAL_RATE: val = sd->bonus.campfire_heal_rate; break;
++		case SP_MONSTER_SCHOLAR: val = sd->bonus.monster_scholar; break;
+ 		case SP_PARTY_SYNERGY: val = pc_party_synergy_bonus( *sd ); break;
+ 		case SP_ADD_ITEM_HEAL_RATE: val = sd->bonus.itemhealrate2; break;
+ 		case SP_EMATK:           val = sd->bonus.ematk; break;
+diff --git a/src/map/pc.hpp b/src/map/pc.hpp
+index 23b9fcb..d21521f 100644
+--- a/src/map/pc.hpp
++++ b/src/map/pc.hpp
+@@ -667,7 +667,7 @@ public:
+ 
+ 		int16 splash_range, splash_add_range;
+ 		int16 add_steal_rate;
+-		int32 add_heal_rate, add_heal2_rate, campfire_heal_rate;
++		int32 add_heal_rate, add_heal2_rate, campfire_heal_rate, monster_scholar;
+ 		int32 sp_gain_value, hp_gain_value, magic_sp_gain_value, magic_hp_gain_value, long_sp_gain_value, long_hp_gain_value;
+ 		uint16 unbreakable;	// chance to prevent ANY equipment breaking [celest]
+ 		uint16 unbreakable_equip; //100% break resistance on certain equipment
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index 2b014eb..f233bb5 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -757,8 +757,10 @@
+ 	export_constant2("bHealPower",SP_ADD_HEAL_RATE);
+ 	export_constant2("bHealPower2",SP_ADD_HEAL2_RATE);
+ 	export_constant2("bCampfireHeal",SP_CAMPFIRE_HEAL_RATE);
++	export_constant2("bCampfireRate",SP_CAMPFIRE_HEAL_RATE);
+ 	export_constant2("bPartySynergy",SP_PARTY_SYNERGY);
+ 	export_constant2("bFriendlyFire",SP_FRIENDLY_FIRE);
++	export_constant2("bMonsterScholar",SP_MONSTER_SCHOLAR);
+ 	export_constant2("bIgnoreResRaceRate",SP_SP_IGNORE_RES_RACE_RATE);
+ 	export_constant2("bIgnoreMResRaceRate",SP_SP_IGNORE_MRES_RACE_RATE);
+ 

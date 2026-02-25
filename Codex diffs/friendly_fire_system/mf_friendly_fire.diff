@@ -1,0 +1,153 @@
+diff --git a/src/map/battle.cpp b/src/map/battle.cpp
+index 3e39475..f141b40 100644
+--- a/src/map/battle.cpp
++++ b/src/map/battle.cpp
+@@ -9716,6 +9716,11 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
+ 
+ 	const map_data* mapdata = map_getmapdata(m);
+ 
++	// Hook: enables offensive skill friendly fire either by mapflag or temporary status.
++	const bool is_offensive_skill_check = ( flag & BCT_ENEMY ) && ( battle_getcurrentskill( src ) > 0 || src->type == BL_SKILL );
++	const bool has_friendly_fire_status = s_bl->type == BL_PC && static_cast<const map_session_data*>( s_bl )->sc.hasSCE( SC_FRIENDLYFIRE );
++	const bool force_friendly_fire = is_offensive_skill_check && ( mapdata->getMapFlag( MF_FRIENDLY_FIRE ) || has_friendly_fire_status );
++
+ 	switch( target->type ) { // Checks on actual target
+ 		case BL_PC: {
+ 				const status_change* sc = status_get_sc(src);
+@@ -9958,18 +9963,32 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
+ 		if( flag&(BCT_PARTY|BCT_ENEMY) )
+ 		{
+ 			int32 s_party = status_get_party_id(s_bl);
+-			if( s_party && s_party == status_get_party_id(t_bl) && !(mapdata->getMapFlag(MF_PVP) && mapdata->getMapFlag(MF_PVP_NOPARTY)) && !(mapdata_flag_gvg(mapdata) && mapdata->getMapFlag(MF_GVG_NOPARTY)) && (!mapdata->getMapFlag(MF_BATTLEGROUND) || sbg_id == tbg_id) )
+-				state |= BCT_PARTY;
+-			else
++			int32 t_party = status_get_party_id(t_bl);
++
++			if( s_party && s_party == t_party && !(mapdata->getMapFlag(MF_PVP) && mapdata->getMapFlag(MF_PVP_NOPARTY)) && !(mapdata_flag_gvg(mapdata) && mapdata->getMapFlag(MF_GVG_NOPARTY)) && (!mapdata->getMapFlag(MF_BATTLEGROUND) || sbg_id == tbg_id) ) {
++				if( force_friendly_fire ) {
++					// Hook: on mf_friendly_fire or SC_FRIENDLYFIRE, allied party members become offensive targets.
++					state |= BCT_ENEMY;
++					strip_enemy = 0;
++				}else
++					state |= BCT_PARTY;
++			}else
+ 				state |= BCT_ENEMY;
+ 		}
+ 		if( flag&(BCT_GUILD|BCT_ENEMY) )
+ 		{
+ 			int32 s_guild = status_get_guild_id(s_bl);
+ 			int32 t_guild = status_get_guild_id(t_bl);
+-			if( !(mapdata->getMapFlag(MF_PVP) && mapdata->getMapFlag(MF_PVP_NOGUILD)) && s_guild && t_guild && (s_guild == t_guild || (!(flag&BCT_SAMEGUILD) && guild_isallied(s_guild, t_guild))) && (!mapdata->getMapFlag(MF_BATTLEGROUND) || sbg_id == tbg_id) )
+-				state |= BCT_GUILD;
+-			else
++			bool is_same_guild_or_ally = s_guild && t_guild && (s_guild == t_guild || (!(flag&BCT_SAMEGUILD) && guild_isallied(s_guild, t_guild)));
++
++			if( !(mapdata->getMapFlag(MF_PVP) && mapdata->getMapFlag(MF_PVP_NOGUILD)) && is_same_guild_or_ally && (!mapdata->getMapFlag(MF_BATTLEGROUND) || sbg_id == tbg_id) ) {
++				if( force_friendly_fire ) {
++					// Hook: on mf_friendly_fire or SC_FRIENDLYFIRE, guild allies become offensive targets.
++					state |= BCT_ENEMY;
++					strip_enemy = 0;
++				}else
++					state |= BCT_GUILD;
++			}else
+ 				state |= BCT_ENEMY;
+ 		}
+ 		if( state&BCT_ENEMY && mapdata->getMapFlag(MF_BATTLEGROUND) && sbg_id && sbg_id == tbg_id )
+@@ -9994,15 +10013,28 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
+ 		if( flag&BCT_PARTY || state&BCT_ENEMY )
+ 		{
+ 			int32 s_party = status_get_party_id(s_bl);
+-			if(s_party && s_party == status_get_party_id(t_bl))
+-				state |= BCT_PARTY;
++			int32 t_party = status_get_party_id(t_bl);
++
++			if( s_party && s_party == t_party ) {
++				if( force_friendly_fire ) {
++					state |= BCT_ENEMY;
++					strip_enemy = 0;
++				}else
++					state |= BCT_PARTY;
++			}
+ 		}
+ 		if( flag&BCT_GUILD || state&BCT_ENEMY )
+ 		{
+ 			int32 s_guild = status_get_guild_id(s_bl);
+ 			int32 t_guild = status_get_guild_id(t_bl);
+-			if(s_guild && t_guild && (s_guild == t_guild || (!(flag&BCT_SAMEGUILD) && guild_isallied(s_guild, t_guild))))
+-				state |= BCT_GUILD;
++
++			if( s_guild && t_guild && (s_guild == t_guild || (!(flag&BCT_SAMEGUILD) && guild_isallied(s_guild, t_guild))) ) {
++				if( force_friendly_fire ) {
++					state |= BCT_ENEMY;
++					strip_enemy = 0;
++				}else
++					state |= BCT_GUILD;
++			}
+ 		}
+ 	} //end non pvp/gvg chk rivality
+ 
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index 38da3c7..a8ec9e9 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -593,7 +593,8 @@ enum _sp {
+ 	SP_SP_IGNORE_RES_RACE_RATE, SP_SP_IGNORE_MRES_RACE_RATE, SP_EMATK_HIDDEN, SP_SKILL_RATIO, // 2104-2107
+ 	SP_NON_CRIT_ATK_RATE, //2108
+ 	SP_CAMPFIRE_HEAL_RATE, //2109
+-	SP_PARTY_SYNERGY //2110
++	SP_PARTY_SYNERGY, //2110
++	SP_FRIENDLY_FIRE //2111
+ };
+ 
+ enum _look {
+@@ -704,6 +705,7 @@ enum e_mapflag : int16 {
+ 	MF_NOCAMPFIRE,
+ 	MF_NO_MERCY,
+ 	MF_BLOOD_TAX,
++	MF_FRIENDLY_FIRE,
+ 	MF_GEAR_LOCK,
+ 	MF_MAX
+ };
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index 60f63fd..32d46fa 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5733,6 +5733,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+ 			map_setmapflag(m, mapflag, state);
+ 			break;
+ 
++		case MF_FRIENDLY_FIRE:
++			map_setmapflag(m, mapflag, state);
++			break;
++
+ 		case MF_GEAR_LOCK:
+ 			map_setmapflag(m, mapflag, state);
+ 			break;
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index cbafbdd..2b014eb 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -541,6 +541,7 @@
+ 	export_constant(MF_NOCAMPFIRE);
+ 	export_constant(MF_NO_MERCY);
+ 	export_constant(MF_BLOOD_TAX);
++	export_constant(MF_FRIENDLY_FIRE);
+ 	export_constant(MF_GEAR_LOCK);
+ 
+ 	/* setcell types */
+@@ -757,6 +758,7 @@
+ 	export_constant2("bHealPower2",SP_ADD_HEAL2_RATE);
+ 	export_constant2("bCampfireHeal",SP_CAMPFIRE_HEAL_RATE);
+ 	export_constant2("bPartySynergy",SP_PARTY_SYNERGY);
++	export_constant2("bFriendlyFire",SP_FRIENDLY_FIRE);
+ 	export_constant2("bIgnoreResRaceRate",SP_SP_IGNORE_RES_RACE_RATE);
+ 	export_constant2("bIgnoreMResRaceRate",SP_SP_IGNORE_MRES_RACE_RATE);
+ 
+@@ -2013,6 +2015,7 @@
+ 	export_constant(SC_WIND_CHARM_POWER);
+ 	export_constant(SC_GROUND_CHARM_POWER);
+ 	export_constant(SC_VIPSTATE);
++	export_constant(SC_FRIENDLYFIRE);
+ 
+ /// Do not modify code below this, until the end of the API hook, since it will be automatically generated again
+ /// @APIHOOK_START(EFST_CONST)

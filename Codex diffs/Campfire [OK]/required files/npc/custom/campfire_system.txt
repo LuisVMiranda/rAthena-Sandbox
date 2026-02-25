@@ -1,0 +1,6 @@
+// Campfire runtime template for Matchstick item (ID 7035).
+// This NPC is duplicated dynamically by source code and should remain hidden.
+// Progress display and zone feedback are handled by source timers to avoid movement lock.
+-	script	Campfire Controller::CAMPFIRE_TEMPLATE	-1,{
+	end;
+}

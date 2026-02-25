@@ -1,0 +1,29 @@
+bMonsterScholar [OK] - How to Install
+=====================================
+
+1) Apply the patch
+   - Apply `bMonsterScholar.diff` to your source tree.
+
+2) Rebuild map-server
+   - Run your standard build steps for rAthena.
+
+3) Use in item/script bonus
+   - Syntax: `bonus bMonsterScholar,<n>;`
+   - Recommended: `bonus bMonsterScholar,1;`
+
+Behavior
+--------
+- Reads permanent character variable `MobKillCount_<RaceID>`.
+- For every 1000 kills of that race, grants +0.1% Physical and Magical damage against that race.
+- Max bonus is +5.0% per race.
+- PvE-only restriction: does NOT apply to `RC_PLAYER_HUMAN` or `RC_PLAYER_DORAM`.
+
+Variable management
+-------------------
+- This patch reads counters but does not force a single source of incrementing.
+- You can increment variables from scripts, quests, or custom kill hooks, e.g.:
+  `setd("MobKillCount_" + <RaceID>, getd("MobKillCount_" + <RaceID>) + 1);`
+
+Notes
+-----
+- `bCampfireRate` is also documented as alias of `bCampfireHeal` in `doc/item_bonus.txt`.

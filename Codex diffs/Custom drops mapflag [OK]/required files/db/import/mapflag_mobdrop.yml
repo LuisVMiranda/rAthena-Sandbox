@@ -1,0 +1,37 @@
+# ============================================================
+# mapflag_mobdrop custom production overrides
+# ============================================================
+# Add live-server entries here.
+
+Header:
+  Type: MAPFLAG_MOBDROP_DB
+  Version: 1
+
+Body:
+  # Single monster + fixed rate
+  # - Map: geffen
+  #   Monster: Poring
+  #   Item: Red_Potion
+  #   Rate:
+  #     Min: 100
+  #   Bind: Free
+
+  # Multiple monsters + dynamic rate + account bound
+  # - Map: geffen
+  #   Monsters:
+  #     - Poring
+  #     - Drops
+  #   Item: Apple
+  #   Rate:
+  #     Min: 100
+  #     Max: 250
+  #   Bind: Account
+
+  # ItemGroup random pool usage
+  # - Map: payon
+  #   Monster: Poporing
+  #   ItemGroup: IG_ORE
+  #   Rate:
+  #     Min: 50
+  #     Max: 150
+  #   Bind: Character

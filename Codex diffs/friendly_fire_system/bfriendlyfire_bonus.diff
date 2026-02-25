@@ -1,0 +1,34 @@
+diff --git a/doc/item_bonus.txt b/doc/item_bonus.txt
+index 539f090..02eeb2d 100644
+--- a/doc/item_bonus.txt
++++ b/doc/item_bonus.txt
+@@ -356,6 +356,7 @@ bonus2 bResEff,eff,n;       		Adds a n/100% tolerance to status eff
+ bonus3 bFriendlyFire,x,t,bf;		On attack, has x%% chance to apply SC_FRIENDLYFIRE for t milliseconds
+ 						while matching trigger criteria bf (offensive skills can target allies while active)
+ 						bf supports BF_SHORT, BF_LONG, BF_WEAPON, BF_MAGIC, BF_MISC, BF_NORMAL, BF_SKILL.
++						If bf omits range/skill masks, defaults are auto-completed (same behavior as other BF bonuses).
+ 					DIFF requirement: `Codex diffs/friendly_fire_system/bfriendlyfire_bonus.diff`
+ 
+ bonus3 bAddEff,eff,n,atf;       		Adds a n/100% chance to cause status eff on the target when attacking
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index dffb5bd..78fded7 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -5304,6 +5304,17 @@ void pc_bonus3(map_session_data *sd,int32 type,int32 type2,int32 type3,int32 val
+ 		if( type2 <= 0 || type3 <= 0 || val <= 0 )
+ 			break;
+ 
++		if( !(val & BF_RANGEMASK) )
++			val |= BF_SHORT | BF_LONG; // No range specified? Allow both.
++		if( !(val & BF_WEAPONMASK) )
++			val |= BF_WEAPON; // No attack type specified? Default to weapon attacks.
++		if( !(val & BF_SKILLMASK) ) {
++			if( val & (BF_MAGIC | BF_MISC) )
++				val |= BF_SKILL; // Magic/misc always come from skill path.
++			if( val & BF_WEAPON )
++				val |= BF_NORMAL | BF_SKILL; // Weapon can be normal or skill-based.
++		}
++
+ 		if( sd->friendly_fire.size() == MAX_PC_BONUS ){
+ 			ShowWarning( "pc_bonus3: SP_FRIENDLY_FIRE: Reached max (%d) number of friendly fire bonuses per character!\n", MAX_PC_BONUS );
+ 			break;

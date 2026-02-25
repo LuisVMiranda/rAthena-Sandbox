@@ -1,0 +1,20 @@
+diff --git a/npc/custom/monstro_campeao.txt b/npc/custom/monstro_campeao.txt
+index 4fa5176..b7a95d2 100644
+--- a/npc/custom/monstro_campeao.txt
++++ b/npc/custom/monstro_campeao.txt
+@@ -74,13 +74,12 @@ OnNPCKillEvent:
+ 	}
+ 
+ 	setunitdata .@gid, UMOB_GROUP_ID, getbattleflag("group_id_monster_champion");
+-	//setunittitle .@gid, getmessage(2000 + .@champion_type);
++	setunittitle .@gid, getmessage(2000 + .@champion_type);
+ 	hateffect HAT_EF_CM_FURIOUS + (.@champion_type - 1), 1, .@gid;
+ 	setd "$monster_champion_" + .@champion_type, .@gid;
+ 
+ 	query_sql("INSERT INTO `monstro_campeao` (`mob_gid`,`raca`,`tipo`,`mapa`,`timer`) VALUES ('" + .@gid + "', '" + .@u[UMOB_RACE] + "', '" + .@champion_type + "', '" + escape_sql(.@map$) + "', '10')");
+-	//mapannounce .@map$, "A " + getmonsterinfo(.@mob_id, MOB_NAME) + " - " + getmessage(2000 + .@champion_type) + " appeared at " + .@x + " / " + .@y + ".", bc_map;
+-	mapannounce .@map$, "A " + getmonsterinfo(.@mob_id, MOB_NAME) + " appeared at " + .@x + " / " + .@y + ".", bc_map;
++	mapannounce .@map$, "A " + getmonsterinfo(.@mob_id, MOB_NAME) + " - " + getmessage(2000 + .@champion_type) + " appeared at " + .@x + " / " + .@y + ".", bc_map;
+ 	end;
+ 
+ OnTimer60000:

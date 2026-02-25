@@ -1,0 +1,139 @@
+diff --git a/src/char/char.cpp b/src/char/char.cpp
+index 3b457d369..dc757e6d8 100644
+--- a/src/char/char.cpp
++++ b/src/char/char.cpp
+@@ -307,7 +307,7 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
+ 	)
+ 	{	//Save status
+ 		if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `%s` SET `base_level`='%d', `job_level`='%d',"
+-			"`base_exp`='%" PRIu64 "', `job_exp`='%" PRIu64 "', `zeny`='%d',"
++			"`base_exp`='%" PRIu64 "', `job_exp`='%" PRIu64 "',"
+ 			"`max_hp`='%u',`hp`='%u',`max_sp`='%u',`sp`='%u',`status_point`='%d',`skill_point`='%d',"
+ 			"`str`='%d',`agi`='%d',`vit`='%d',`int`='%d',`dex`='%d',`luk`='%d',"
+ 			"`option`='%d',`party_id`='%d',`guild_id`='%d',`pet_id`='%d',`homun_id`='%d',`elemental_id`='%d',"
+@@ -319,7 +319,7 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
+ 			"`pow`='%d',`sta`='%d',`wis`='%d',`spl`='%d',`con`='%d',`crt`='%d'"
+ 			" WHERE `account_id`='%d' AND `char_id` = '%d'",
+ 			schema_config.char_db, p->base_level, p->job_level,
+-			p->base_exp, p->job_exp, p->zeny,
++			p->base_exp, p->job_exp,
+ 			p->max_hp, p->hp, p->max_sp, p->sp, p->status_point, p->skill_point,
+ 			p->str, p->agi, p->vit, p->int_, p->dex, p->luk,
+ 			p->option, p->party_id, p->guild_id, p->pet_id, p->hom_id, p->ele_id,
+@@ -519,6 +519,12 @@ int char_mmo_char_tosql(uint32 char_id, struct mmo_charstatus* p){
+ 	}
+ #endif
+ 	StringBuf_Destroy(&buf);
++
++	// Shared zeny between chars of same account
++	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `login` SET  `zeny`='%d' WHERE `account_id` = '%d'", p->zeny, p->account_id))
++		Sql_ShowDebug(sql_handle);
++	strcat(save_status, " zeny ");
++
+ 	if (save_status[0]!='\0' && charserv_config.save_log)
+ 		ShowInfo("Saved char %d - %s:%s.\n", char_id, p->name, save_status);
+ 	if (!errors)
+@@ -1000,12 +1006,33 @@ int char_mmo_chars_fromsql(struct char_session_data* sd, uint8* buf, uint8* coun
+ 		return 0;
+ 	}
+ 
++	// Shared zeny between chars of same account
++	char* data;
++	size_t len;
++	int t_zeny = 0;
++	if( SQL_SUCCESS != Sql_Query(sql_handle, "SELECT `zeny` FROM `login` WHERE `account_id`=%d", sd->account_id) )
++	{
++		Sql_ShowDebug(sql_handle);
++		return false;
++	}
++	if( SQL_SUCCESS != Sql_NextRow(sql_handle) )
++	{
++		Sql_ShowDebug(sql_handle);
++		Sql_FreeResult(sql_handle);
++		return false;
++	}
++
++	Sql_GetData(sql_handle, 0, &data, &len);
++	t_zeny = ( data != NULL ) ? atoi(data) : 0;
++	Sql_FreeResult(sql_handle);
++
+ 	for( i = 0; i < MAX_CHARS && SQL_SUCCESS == SqlStmt_NextRow(stmt); i++ )
+ 	{
+ 		p.last_point.map = mapindex_name2id(last_map);
+ 		sd->found_char[p.slot] = p.char_id;
+ 		sd->unban_time[p.slot] = p.unban_time;
+ 		p.sex = char_mmo_gender(sd, &p, sex[0]);
++		p.zeny = t_zeny;
+ 		j += char_mmo_char_tobuf(WBUFP(buf, j), &p);
+ 
+ 		// Addon System
+@@ -1170,6 +1197,26 @@ int char_mmo_char_fromsql(uint32 char_id, struct mmo_charstatus* p, bool load_ev
+ 	StringBuf_Init(&msg_buf);
+ 	StringBuf_AppendStr(&msg_buf, " status");
+ 
++	// Shared zeny between chars of same account
++	char* data;
++	size_t len;
++
++	if( SQL_SUCCESS != Sql_Query(sql_handle, "SELECT `zeny` FROM `login` WHERE `account_id` IN (SELECT `account_id` FROM `%s` WHERE `char_id`= %d)", schema_config.char_db, char_id) )
++	{
++		Sql_ShowDebug(sql_handle);
++		return false;
++	}
++	if( SQL_SUCCESS != Sql_NextRow(sql_handle) )
++	{
++		Sql_ShowDebug(sql_handle);
++		Sql_FreeResult(sql_handle);
++		return false;
++	}
++
++	Sql_GetData(sql_handle, 0, &data, &len);
++	p->zeny = ( data != NULL ) ? atoi(data) : 0;
++	Sql_FreeResult(sql_handle);
++
+ 	if (!load_everything) // For quick selection of data when displaying the char menu
+ 	{
+ 		SqlStmt_Free(stmt);
+@@ -1256,8 +1303,7 @@ int char_mmo_char_fromsql(uint32 char_id, struct mmo_charstatus* p, bool load_ev
+ 	/* Mercenary Owner DataBase */
+ 	mercenary_owner_fromsql(char_id, p);
+ 	StringBuf_AppendStr(&msg_buf, " mercenary");
+-
+-
++
+ 	if (charserv_config.save_log)
+ 		ShowInfo("Loaded char (%d - %s): %s\n", char_id, p->name, StringBuf_Value(&msg_buf)); //ok. all data load successfully!
+ 	SqlStmt_Free(stmt);
+@@ -1543,6 +1589,10 @@ int char_make_new_char( struct char_session_data* sd, char* name_, int str, int
+ 			Sql_ShowDebug(sql_handle);
+ 	}
+ 
++	// Shared zeny between chars of same account
++	if( SQL_ERROR == Sql_Query(sql_handle, "UPDATE `login` SET `zeny`=`zeny` + '%d' WHERE `account_id` = '%d'", charserv_config.start_zeny, sd->account_id))
++		Sql_ShowDebug(sql_handle);
++
+ 	ShowInfo("Created char: account: %d, char: %d, slot: %d, name: %s\n", sd->account_id, char_id, slot, name);
+ 	return char_id;
+ }
+@@ -3287,6 +3337,21 @@ int do_init(int argc, char **argv)
+ 	if( SQL_ERROR == Sql_Query(sql_handle, "DELETE FROM `%s` WHERE `guild_id` = '0' AND `char_id` = '0'", schema_config.guild_member_db) )
+ 		Sql_ShowDebug(sql_handle);
+ 
++	// Shared zeny between chars of same account
++	if (SQL_SUCCESS != Sql_Query(sql_handle, "SHOW COLUMNS FROM `login` LIKE 'zeny'"))
++	{
++		Sql_ShowDebug(sql_handle);
++		exit(EXIT_FAILURE);
++	}
++	if (Sql_NumRows(sql_handle) == 0)
++	{
++		if (SQL_SUCCESS != Sql_Query(sql_handle, "ALTER TABLE `login` ADD `zeny` INT(11) UNSIGNED NOT NULL DEFAULT '0';"))
++		{
++			Sql_ShowDebug(sql_handle);
++			exit(EXIT_FAILURE);
++		}
++	}
++
+ 	set_defaultparse(chclif_parse);
+ 
+ 	if( (char_fd = make_listen_bind(charserv_config.bind_ip,charserv_config.char_port)) == -1 ) {

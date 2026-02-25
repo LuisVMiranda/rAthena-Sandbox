@@ -1,0 +1,165 @@
+diff --git a/src/map/map.cpp b/src/map/map.cpp
+index 0c890a7..bb557eb 100644
+--- a/src/map/map.cpp
++++ b/src/map/map.cpp
+@@ -4923,6 +4923,23 @@ bool map_setmapflag_sub(int16 m, enum e_mapflag mapflag, bool status, union u_ma
+ 			} else
+ 				mapdata->setMapFlag(mapflag, false);
+ 			break;
++		case MF_MOBDROP:
++			if (!status) {
++				mapdata->mobdrop_rules.clear();
++				mapdata->setMapFlag(mapflag, false);
++				break;
++			}
++
++			nullpo_retr(false, args);
++
++			if (mapdata->mobdrop_rules.size() >= MAX_MOBDROP_RULES_PER_MAP) {
++				ShowWarning("map_setmapflag: Reached max MF_MOBDROP rules on map %s (%d). Skipping.\n", mapdata->name, MAX_MOBDROP_RULES_PER_MAP);
++				return false;
++			}
++
++			mapdata->mobdrop_rules.push_back(args->mobdrop);
++			mapdata->setMapFlag(mapflag, true);
++			break;
+ 		case MF_BATTLEGROUND:
+ 			if (status) {
+ 				nullpo_retr(false, args);
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index 2b9de28..99923e9 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -77,6 +77,7 @@ void map_msg_reload(void);
+ #define MAX_FLOORITEM START_ACCOUNT_NUM
+ #define MAX_LEVEL 275
+ #define MAX_DROP_PER_MAP 48
++#define MAX_MOBDROP_RULES_PER_MAP 128
+ #define MAX_IGNORE_LIST 20 	// official is 14
+ #define MAX_VENDING 12
+ #define MAX_MAP_SIZE 512*512 	// Wasn't there something like this already? Can't find it.. [Shinryo]
+@@ -697,6 +698,7 @@ enum e_mapflag : int16 {
+ 	MF_SPECIALPOPUP,
+ 	MF_NOMACROCHECKER,
+ 	MF_INVINCIBLE_TIME,
++	MF_MOBDROP,
+ 	MF_MAX
+ };
+ 
+@@ -737,12 +739,20 @@ struct s_drop_list {
+ 	enum e_nightmare_drop_type drop_type;
+ };
+ 
++/// Struct for MF_MOBDROP
++struct s_mapflag_mobdrop {
++	uint16 item_id;
++	uint16 rate;
++	uint16 mob_id; // 0 = any mob
++};
++
+ /// Union for mapflag values
+ union u_mapflag_args {
+ 	struct point nosave;
+ 	struct s_drop_list nightmaredrop;
+ 	struct s_skill_damage skill_damage;
+ 	struct s_skill_duration skill_duration;
++	struct s_mapflag_mobdrop mobdrop;
+ 	int32 flag_val;
+ };
+ 
+@@ -837,6 +847,7 @@ struct map_data {
+ 
+ 	struct point save;
+ 	std::vector<s_drop_list> drop_list;
++	std::vector<s_mapflag_mobdrop> mobdrop_rules;
+ 	uint32 zone; // zone number (for item/skill restrictions)
+ 	struct s_skill_damage damage_adjust; // Used for overall skill damage adjustment
+ 	std::unordered_map<uint16, s_skill_damage> skill_damage; // Used for single skill damage adjustment
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index 1523845..db2d75e 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5525,6 +5525,42 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+ 			break;
+ 		}
+ 
++		case MF_MOBDROP: {
++			union u_mapflag_args args = {};
++			int32 item_id = 0;
++			int32 rate = 0;
++			int32 mob_id = 0;
++
++			if (!state || !strcmpi(w4, "off")) {
++				map_setmapflag(m, MF_MOBDROP, false);
++				break;
++			}
++
++			int32 parsed = sscanf(w4, "%11d,%11d,%11d", &item_id, &rate, &mob_id);
++
++			if (parsed < 2) {
++				ShowWarning("npc_parse_mapflag: Invalid mobdrop args '%s' (file '%s', line '%d').\n", w4, filepath, strline(buffer, start - buffer));
++				break;
++			}
++
++			if (!item_db.exists(item_id)) {
++				ShowWarning("npc_parse_mapflag: Invalid item id %d for mobdrop mapflag (file '%s', line '%d').\n", item_id, filepath, strline(buffer, start - buffer));
++				break;
++			}
++
++			if (parsed >= 3 && !mob_db.exists(static_cast<uint16>(mob_id))) {
++				ShowWarning("npc_parse_mapflag: Invalid mob id %d for mobdrop mapflag (file '%s', line '%d').\n", mob_id, filepath, strline(buffer, start - buffer));
++				break;
++			}
++
++			args.mobdrop.item_id = static_cast<uint16>(item_id);
++			args.mobdrop.rate = static_cast<uint16>(cap_value(rate, 1, 10000));
++			args.mobdrop.mob_id = static_cast<uint16>(parsed >= 3 ? mob_id : 0);
++
++			map_setmapflag_sub(m, MF_MOBDROP, true, &args);
++			break;
++		}
++
+ 		case MF_BATTLEGROUND:
+ 			if (state) {
+ 				union u_mapflag_args args = {};
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index 489f7ef..66199d5 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -537,6 +537,7 @@
+ 	export_constant(MF_SPECIALPOPUP);
+ 	export_constant(MF_NOMACROCHECKER);
+ 	export_constant(MF_INVINCIBLE_TIME);
++	export_constant(MF_MOBDROP);
+ 
+ 	/* setcell types */
+ 	export_constant(CELL_WALKABLE);
+diff --git a/src/map/mob.cpp b/src/map/mob.cpp
+index b2f7bfc..6c045ef 100644
+--- a/src/map/mob.cpp
++++ b/src/map/mob.cpp
+@@ -3442,6 +3442,24 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
+ 			}
+ 		}
+ 
++		// Process MF_MOBDROP custom mapflag drops
++		if (map_getmapflag(md->m, MF_MOBDROP)) {
++			for (const s_mapflag_mobdrop& rule : map[md->m].mobdrop_rules) {
++				if (rule.mob_id != 0 && rule.mob_id != md->mob_id)
++					continue;
++
++				if (rnd() % 10000 >= rule.rate)
++					continue;
++
++				std::shared_ptr<s_mob_drop> custom_drop = std::make_shared<s_mob_drop>();
++				custom_drop->nameid = rule.item_id;
++				custom_drop->rate = rule.rate;
++
++				std::shared_ptr<s_item_drop> ditem = mob_setdropitem(custom_drop, 1, md->mob_id);
++				mob_item_drop(md, dlist, ditem, 0, rule.rate, homkillonly || merckillonly);
++			}
++		}
++
+ 		// There are drop items.
+ 		if (!dlist->items.empty() || !lootlist->items.empty()) {
+ 			mob_delayed_drops[md->id] = dlist;

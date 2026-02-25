@@ -1,0 +1,114 @@
+diff --git a/conf/battle/feature.conf b/conf/battle/feature.conf
+index 61514e4..078c913 100644
+--- a/conf/battle/feature.conf
++++ b/conf/battle/feature.conf
+@@ -236,3 +236,7 @@ feature.campfire_ground_effect: 313
+ 
+ // Campfire display language: 1=English, 2=Portuguese, 3=Spanish
+ feature.campfire_language: 1
++
++// No Mercy mapflag recovery modifier (% of original recover kept).
++// Example: 20 = keep only 20% (80% reduction) on maps with mapflag no_mercy.
++feature.no_mercy_recover_rate: 20
+diff --git a/src/map/battle.cpp b/src/map/battle.cpp
+index d47a454..f699ab0 100644
+--- a/src/map/battle.cpp
++++ b/src/map/battle.cpp
+@@ -10735,6 +10735,7 @@ static const struct _battle_data {
+ 	{ "feature.campfire_ground_skill_lv",   &battle_config.feature_campfire_ground_skill_lv,1,      1,      MAX_SKILL_LEVEL, },
+ 	{ "feature.campfire_ground_effect",     &battle_config.feature_campfire_ground_effect,  313,    0,      INT_MAX,        },
+ 	{ "feature.campfire_language",          &battle_config.feature_campfire_language,       1,      1,      3,              },
++	{ "feature.no_mercy_recover_rate",     &battle_config.feature_no_mercy_recover_rate,    20,     0,      100,            },
+ 
+ 	{ "mob_respawn_time",                   &battle_config.mob_respawn_time,                1000,   1000,   INT_MAX,        },
+ 	{ "mob_unlock_time",                    &battle_config.mob_unlock_time,                 2000,   0,      INT_MAX,        },
+diff --git a/src/map/battle.hpp b/src/map/battle.hpp
+index 0348b90..859102e 100644
+--- a/src/map/battle.hpp
++++ b/src/map/battle.hpp
+@@ -812,6 +812,7 @@ struct Battle_Config
+ 	int32 feature_campfire_ground_skill_lv;
+ 	int32 feature_campfire_ground_effect;
+ 	int32 feature_campfire_language;
++	int32 feature_no_mercy_recover_rate;
+ 
+ 	int32 mob_respawn_time;
+ 	int32 mob_unlock_time;
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index 9c107e0..f45a4e2 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -701,6 +701,7 @@ enum e_mapflag : int16 {
+ 	MF_INVINCIBLE_TIME,
+ 	MF_MOBDROP,
+ 	MF_NOCAMPFIRE,
++	MF_NO_MERCY,
+ 	MF_MAX
+ };
+ 
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index 0bd61ce..cfae55f 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5725,6 +5725,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+ 			}
+ 			break;
+ 
++		case MF_NO_MERCY:
++			map_setmapflag(m, mapflag, state);
++			break;
++
+ 		// All others do not need special treatment
+ 		default:
+ 			map_setmapflag(m, mapflag, state);
+@@ -6139,7 +6143,7 @@ static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
+ 		sp_gain = std::max<int32>( 0, sp_gain );
+ 		if( hp_gain > 0 || sp_gain > 0 ){
+ 			status_heal( tsd, hp_gain, sp_gain, 3 );
+-			clif_specialeffect( tsd, battle_config.feature_campfire_ground_effect > 0 ? battle_config.feature_campfire_ground_effect : 313, AREA );
++			clif_specialeffect( tsd, battle_config.feature_campfire_ground_effect > 0 ? battle_config.feature_campfire_ground_effect : 313, SELF );
+ 		}
+ 	}
+ 
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index a6236f3..ad66efb 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -10769,6 +10769,11 @@ int32 pc_itemheal(map_session_data *sd, t_itemid itemid, int32 hp, int32 sp)
+ 			sp += sp / 10;
+ 		}
+ 
++		if( map_getmapflag( sd->m, MF_NO_MERCY ) ) {
++			hp = hp * battle_config.feature_no_mercy_recover_rate / 100;
++			sp = sp * battle_config.feature_no_mercy_recover_rate / 100;
++		}
++
+ #ifdef RENEWAL
+ 		if (sd->sc.getSCE(SC_APPLEIDUN))
+ 			hp += sd->sc.getSCE(SC_APPLEIDUN)->val3 / 100;
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index 1939bc1..1d0a4a5 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -539,6 +539,7 @@
+ 	export_constant(MF_INVINCIBLE_TIME);
+ 	export_constant(MF_MOBDROP);
+ 	export_constant(MF_NOCAMPFIRE);
++	export_constant(MF_NO_MERCY);
+ 
+ 	/* setcell types */
+ 	export_constant(CELL_WALKABLE);
+diff --git a/src/map/skill.cpp b/src/map/skill.cpp
+index efbc461..e39193f 100644
+--- a/src/map/skill.cpp
++++ b/src/map/skill.cpp
+@@ -766,6 +766,9 @@ int32 skill_calc_heal(block_list *src, block_list *target, uint16 skill_id, uint
+ 		}
+ 	}
+ 
++	if( heal && target != nullptr && map_getmapflag( target->m, MF_NO_MERCY ) )
++		hp = hp * battle_config.feature_no_mercy_recover_rate / 100;
++
+ #ifdef RENEWAL
+ 	hp = (int32)(hp * global_bonus);
+ 

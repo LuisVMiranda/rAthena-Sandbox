@@ -1,0 +1,762 @@
+diff --git a/.gitignore b/.gitignore
+index 33724a7..f1a6d58 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -69,6 +69,7 @@ Thumbs.db
+ /db/import/*
+ !/db/import/item_db_extended_vending.yml
+ !/db/import/item_db_bg.yml
++!/db/import/mapflag_mobdrop.yml
+ 
+ # /conf/
+ /conf/import
+diff --git a/db/import/mapflag_mobdrop.yml b/db/import/mapflag_mobdrop.yml
+new file mode 100644
+index 0000000..2a8c6a2
+--- /dev/null
++++ b/db/import/mapflag_mobdrop.yml
+@@ -0,0 +1,37 @@
++# ============================================================
++# mapflag_mobdrop custom production overrides
++# ============================================================
++# Add live-server entries here.
++
++Header:
++  Type: MAPFLAG_MOBDROP_DB
++  Version: 1
++
++Body:
++  # Single monster + fixed rate
++  # - Map: geffen
++  #   Monster: Poring
++  #   Item: Red_Potion
++  #   Rate:
++  #     Min: 100
++  #   Bind: Free
++
++  # Multiple monsters + dynamic rate + account bound
++  # - Map: geffen
++  #   Monsters:
++  #     - Poring
++  #     - Drops
++  #   Item: Apple
++  #   Rate:
++  #     Min: 100
++  #     Max: 250
++  #   Bind: Account
++
++  # ItemGroup random pool usage
++  # - Map: payon
++  #   Monster: Poporing
++  #   ItemGroup: IG_ORE
++  #   Rate:
++  #     Min: 50
++  #     Max: 150
++  #   Bind: Character
+diff --git a/db/mapflag_mobdrop.yml b/db/mapflag_mobdrop.yml
+new file mode 100644
+index 0000000..54b12ee
+--- /dev/null
++++ b/db/mapflag_mobdrop.yml
+@@ -0,0 +1,98 @@
++# This file is a part of rAthena.
++# MF_MOBDROP YAML database.
++#
++# ---------------------------------------------------------------------------
++# RATE / PERCENTAGE NOTES
++# ---------------------------------------------------------------------------
++# Rates use the same 1..10000 system used by many drop systems in rAthena:
++#   1      = 0.01%
++#   100    = 1.00%
++#   1000   = 10.00%
++#   10000  = 100.00%
++#
++# If Min and Max are both set, one random value between Min..Max is selected
++# per kill, then rolled as the final chance.
++#
++# ---------------------------------------------------------------------------
++# BIND ACCEPTED VALUES
++# ---------------------------------------------------------------------------
++# Bind supports all of the following aliases:
++#   - Free, free, Trade, trade, none, BOUND_NONE
++#   - Account, account, account_bound, BOUND_ACCOUNT
++#   - Character, character, Char, char, char_bound, BOUND_CHAR
++#
++# ---------------------------------------------------------------------------
++# MONSTER FILTER BEHAVIOR
++# ---------------------------------------------------------------------------
++# You can choose EITHER:
++#   1) Monster: <single monster aegis name | All | *>
++#   2) Monsters: [ <monster1>, <monster2>, ... ]
++#
++# If no Monster/Monsters field is provided, the rule applies to all monsters.
++#
++# ---------------------------------------------------------------------------
++# ITEM SOURCE BEHAVIOR
++# ---------------------------------------------------------------------------
++# You must choose EXACTLY ONE of:
++#   - Item: <item aegis name>
++#   - ItemGroup: <group id OR group constant like IG_ORE>
++#
++# ItemGroup behavior in MF_MOBDROP: one item is selected from subgroup 1
++# using the list only; item-group internal drop-rate percentages are ignored.
++# Final drop chance is always controlled by this file's Rate.Min/Rate.Max.
++#
++# RandomOptionGroup is optional and must exist in item_randomopt_group.yml.
++
++Header:
++  Type: MAPFLAG_MOBDROP_DB
++  Version: 1
++
++Body:
++  # ============================================================
++  # COMPLETE BOILERPLATE (PRODUCTION TEMPLATE)
++  # ============================================================
++  # - Map: <map_name>
++  #   Monster: <mob_aegis_name | All | *>           # optional
++  #   Monsters:                                     # optional (use instead of Monster)
++  #     - <mob_aegis_name>
++  #     - <mob_aegis_name>
++  #   Item: <item_aegis_name>                       # required if ItemGroup is absent
++  #   ItemGroup: <group_id_or_constant>             # required if Item is absent
++  #   Rate:
++  #     Min: <1..10000>                             # required
++  #     Max: <1..10000>                             # optional (defaults to Min)
++  #   Bind: <see accepted values above>             # optional (defaults to Free)
++  #   RandomOptionGroup: <group_name>               # optional
++
++  # Example A: any monster in prontera, fixed 2.50%, free-trade item drop
++  # - Map: prontera
++  #   Monster: All
++  #   Item: Apple
++  #   Rate:
++  #     Min: 250
++  #   Bind: Free
++
++  # Example B: specific monster list, dynamic chance, account-bound, random options
++  # - Map: geffen
++  #   Monsters:
++  #     - Poring
++  #     - Drops
++  #   Item: Jellopy
++  #   Rate:
++  #     Min: 100
++  #     Max: 350
++  #   Bind: Account
++  #   RandomOptionGroup: Group_Test
++
++  # Example C: random item from an ItemGroup pool
++  # - Map: payon
++  #   Monster: Poporing
++  #   ItemGroup: IG_ORE
++  #   Rate:
++  #     Min: 75
++  #     Max: 200
++  #   Bind: Character
++
++Footer:
++  Imports:
++    - Path: db/import/mapflag_mobdrop.yml
+diff --git a/src/map/atcommand.cpp b/src/map/atcommand.cpp
+index af090c6..c39c0bc 100644
+--- a/src/map/atcommand.cpp
++++ b/src/map/atcommand.cpp
+@@ -4569,6 +4569,15 @@ ACMD_FUNC(reloadlogconf){
+ 	return 0;
+ }
+ 
++ACMD_FUNC(reloadmapdb){
++	nullpo_retr(-1, sd);
++
++	mapflag_mobdrop_reload();
++	clif_displaymessage(fd, "Map mobdrop YAML database has been reloaded.");
++
++	return 0;
++}
++
+ ACMD_FUNC( reload ){
+ 	static const struct{
+ 		const char* type;
+@@ -4583,6 +4592,7 @@ ACMD_FUNC( reload ){
+ 		{ "instancedb", atcommand_reloadinstancedb },
+ 		{ "itemdb", atcommand_reloaditemdb },
+ 		{ "logconf", atcommand_reloadlogconf },
++		{ "mapdb", atcommand_reloadmapdb },
+ 		{ "mobdb", atcommand_reloadmobdb },
+ 		{ "motd", atcommand_reloadmotd },
+ 		{ "msgconf", atcommand_reloadmsgconf },
+@@ -11756,6 +11766,7 @@ void atcommand_basecommands(void) {
+ 		ACMD_DEF(reloaditemdb),
+ 		ACMD_DEF(reloadcashdb),
+ 		ACMD_DEF(reloadmobdb),
++		ACMD_DEF(reloadmapdb),
+ 		ACMD_DEF(reloadskilldb),
+ 		ACMD_DEFR(reloadscript, ATCMD_NOSCRIPT),
+ 		ACMD_DEF(reloadatcommand),
+diff --git a/src/map/map.cpp b/src/map/map.cpp
+index 0c890a7..bb557eb 100644
+--- a/src/map/map.cpp
++++ b/src/map/map.cpp
+@@ -4923,6 +4923,23 @@ bool map_setmapflag_sub(int16 m, enum e_mapflag mapflag, bool status, union u_ma
+ 			} else
+ 				mapdata->setMapFlag(mapflag, false);
+ 			break;
++		case MF_MOBDROP:
++			if (!status) {
++				mapdata->mobdrop_rules.clear();
++				mapdata->setMapFlag(mapflag, false);
++				break;
++			}
++
++			nullpo_retr(false, args);
++
++			if (mapdata->mobdrop_rules.size() >= MAX_MOBDROP_RULES_PER_MAP) {
++				ShowWarning("map_setmapflag: Reached max MF_MOBDROP rules on map %s (%d). Skipping.\n", mapdata->name, MAX_MOBDROP_RULES_PER_MAP);
++				return false;
++			}
++
++			mapdata->mobdrop_rules.push_back(args->mobdrop);
++			mapdata->setMapFlag(mapflag, true);
++			break;
+ 		case MF_BATTLEGROUND:
+ 			if (status) {
+ 				nullpo_retr(false, args);
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index 2b9de28..99923e9 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -77,6 +77,7 @@ void map_msg_reload(void);
+ #define MAX_FLOORITEM START_ACCOUNT_NUM
+ #define MAX_LEVEL 275
+ #define MAX_DROP_PER_MAP 48
++#define MAX_MOBDROP_RULES_PER_MAP 128
+ #define MAX_IGNORE_LIST 20 	// official is 14
+ #define MAX_VENDING 12
+ #define MAX_MAP_SIZE 512*512 	// Wasn't there something like this already? Can't find it.. [Shinryo]
+@@ -697,6 +698,7 @@ enum e_mapflag : int16 {
+ 	MF_SPECIALPOPUP,
+ 	MF_NOMACROCHECKER,
+ 	MF_INVINCIBLE_TIME,
++	MF_MOBDROP,
+ 	MF_MAX
+ };
+ 
+@@ -737,12 +739,20 @@ struct s_drop_list {
+ 	enum e_nightmare_drop_type drop_type;
+ };
+ 
++/// Struct for MF_MOBDROP
++struct s_mapflag_mobdrop {
++	uint16 item_id;
++	uint16 rate;
++	uint16 mob_id; // 0 = any mob
++};
++
+ /// Union for mapflag values
+ union u_mapflag_args {
+ 	struct point nosave;
+ 	struct s_drop_list nightmaredrop;
+ 	struct s_skill_damage skill_damage;
+ 	struct s_skill_duration skill_duration;
++	struct s_mapflag_mobdrop mobdrop;
+ 	int32 flag_val;
+ };
+ 
+@@ -837,6 +847,7 @@ struct map_data {
+ 
+ 	struct point save;
+ 	std::vector<s_drop_list> drop_list;
++	std::vector<s_mapflag_mobdrop> mobdrop_rules;
+ 	uint32 zone; // zone number (for item/skill restrictions)
+ 	struct s_skill_damage damage_adjust; // Used for overall skill damage adjustment
+ 	std::unordered_map<uint16, s_skill_damage> skill_damage; // Used for single skill damage adjustment
+diff --git a/src/map/mob.cpp b/src/map/mob.cpp
+index b2f7bfc..5e94749 100644
+--- a/src/map/mob.cpp
++++ b/src/map/mob.cpp
+@@ -86,6 +86,7 @@ std::unordered_map<uint32, std::shared_ptr<s_item_drop_list>> mob_looted_drops;
+ MobSummonDatabase mob_summon_db;
+ MobChatDatabase mob_chat_db;
+ MapDropDatabase map_drop_db;
++MapFlagMobDropDatabase mapflag_mobdrop_db;
+ 
+ /*==========================================
+  * Local prototype declaration   (only required thing)
+@@ -2941,6 +2942,29 @@ map_session_data* mob_data::get_mvp_player(map_session_data* first_sd) {
+  * Signals death of mob.
+  * type&1 -> no drops, type&2 -> no exp
+  *------------------------------------------*/
++
++static t_itemid mapflag_mobdrop_pick_itemgroup_item( uint16 group_id ){
++	std::shared_ptr<s_item_group_db> group = itemdb_group.find( group_id );
++
++	if( group == nullptr ){
++		return 0;
++	}
++
++	std::shared_ptr<s_item_group_random> subgroup = util::umap_find( group->random, static_cast<uint16>(1) );
++
++	if( subgroup == nullptr || subgroup->data.empty() ){
++		return 0;
++	}
++
++	std::shared_ptr<s_item_group_entry> entry = util::umap_random( subgroup->data );
++
++	if( entry == nullptr ){
++		return 0;
++	}
++
++	return entry->nameid;
++}
++
+ int32 mob_dead(mob_data *md, block_list *src, int32 type)
+ {
+ 	struct status_data *status;
+@@ -3442,6 +3466,65 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
+ 			}
+ 		}
+ 
++		// Process MF_MOBDROP mapflag rules (legacy script mapflag lines)
++		if (map_getmapflag(md->m, MF_MOBDROP)) {
++			for (const s_mapflag_mobdrop& rule : map[md->m].mobdrop_rules) {
++				if (rule.mob_id != 0 && rule.mob_id != md->mob_id)
++					continue;
++
++				if (rnd() % 10000 >= rule.rate)
++					continue;
++
++				std::shared_ptr<s_mob_drop> custom_drop = std::make_shared<s_mob_drop>();
++				custom_drop->nameid = rule.item_id;
++				custom_drop->rate = rule.rate;
++				custom_drop->randomopt_group = 0;
++				custom_drop->steal_protected = true;
++
++				std::shared_ptr<s_item_drop> ditem = mob_setdropitem(custom_drop, 1, md->mob_id);
++				mob_item_drop(md, dlist, ditem, 0, rule.rate, homkillonly || merckillonly);
++			}
++		}
++
++		// Process YAML-driven MF_MOBDROP rules
++		std::shared_ptr<s_mapflag_mobdrop_db> yaml_mobdrop;
++
++		if (map[md->m].instance_id > 0)
++			yaml_mobdrop = mapflag_mobdrop_db.find(map[md->m].instance_src_map);
++		else
++			yaml_mobdrop = mapflag_mobdrop_db.find(md->m);
++
++		if (yaml_mobdrop != nullptr) {
++			for (const s_mapflag_mobdrop_rule& rule : yaml_mobdrop->rules) {
++				if (!rule.mob_ids.empty() && std::find(rule.mob_ids.begin(), rule.mob_ids.end(), md->mob_id) == rule.mob_ids.end())
++					continue;
++
++				uint16 final_rate = (rule.rate_min == rule.rate_max ? rule.rate_min : rnd_value(rule.rate_min, rule.rate_max));
++
++				if (!rnd_chance(final_rate, static_cast<uint16>(10000)))
++					continue;
++
++				t_itemid final_item = rule.item_id;
++
++				if (rule.item_group_id > 0) {
++					final_item = mapflag_mobdrop_pick_itemgroup_item(rule.item_group_id);
++
++					if (final_item == 0)
++						continue;
++				}
++
++				std::shared_ptr<s_mob_drop> custom_drop = std::make_shared<s_mob_drop>();
++				custom_drop->nameid = final_item;
++				custom_drop->rate = final_rate;
++				custom_drop->randomopt_group = rule.randomopt_group;
++				custom_drop->steal_protected = true;
++
++				std::shared_ptr<s_item_drop> ditem = mob_setdropitem(custom_drop, 1, md->mob_id);
++				ditem->item_data.bound = rule.bound;
++				mob_item_drop(md, dlist, ditem, 0, final_rate, homkillonly || merckillonly);
++			}
++		}
++
+ 		// There are drop items.
+ 		if (!dlist->items.empty() || !lootlist->items.empty()) {
+ 			mob_delayed_drops[md->id] = dlist;
+@@ -7134,6 +7217,210 @@ bool MapDropDatabase::parseDrop( const ryml::NodeRef& node, std::unordered_map<u
+ 	return true;
+ }
+ 
++
++const std::string MapFlagMobDropDatabase::getDefaultLocation(){
++	return std::string( db_path ) + "/mapflag_mobdrop.yml";
++}
++
++uint64 MapFlagMobDropDatabase::parseBodyNode(const ryml::NodeRef& node){
++	if( !this->nodesExist( node, { "Map", "Rate" } ) ){
++		return 0;
++	}
++
++	std::string mapname;
++
++	if( !this->asString( node, "Map", mapname ) ){
++		return 0;
++	}
++
++	uint16 mapindex = mapindex_name2idx( mapname.c_str(), nullptr );
++
++	if( mapindex == 0 ){
++		this->invalidWarning( node["Map"], "Unknown map \"%s\".\n", mapname.c_str() );
++		return 0;
++	}
++
++	int16 mapid = map_mapindex2mapid( mapindex );
++
++	if( mapid < 0 ){
++		// Silently ignore. Map might be on a different map-server.
++		return 0;
++	}
++
++	std::shared_ptr<s_mapflag_mobdrop_db> mapdrops = this->find( mapid );
++	bool exists = mapdrops != nullptr;
++
++	if( !exists ){
++		mapdrops = std::make_shared<s_mapflag_mobdrop_db>();
++		mapdrops->mapid = mapid;
++	}
++
++	s_mapflag_mobdrop_rule rule = {};
++	rule.item_id = 0;
++	rule.item_group_id = 0;
++	rule.bound = BOUND_NONE;
++	rule.randomopt_group = 0;
++
++	if( this->nodeExists( node, "Monster" ) ){
++		std::string mobname;
++
++		if( !this->asString( node, "Monster", mobname ) ){
++			return 0;
++		}
++
++		if( strcmpi( mobname.c_str(), "all" ) != 0 && mobname != "*" ){
++			std::shared_ptr<s_mob_db> mob = mobdb_search_aegisname( mobname.c_str() );
++
++			if( mob == nullptr ){
++				this->invalidWarning( node["Monster"], "Unknown monster \"%s\".\n", mobname.c_str() );
++				return 0;
++			}
++
++			rule.mob_ids.push_back( mob->id );
++		}
++	}else if( this->nodeExists( node, "Monsters" ) ){
++		for( const ryml::NodeRef& mobNode : node["Monsters"] ){
++			std::string mobname;
++
++			c4::from_chars( mobNode.val(), &mobname );
++
++			if( mobname.empty() ){
++				this->invalidWarning( mobNode, "Monster entry cannot be empty.\n" );
++				return 0;
++			}
++
++			if( strcmpi( mobname.c_str(), "all" ) == 0 || mobname == "*" ){
++				rule.mob_ids.clear();
++				break;
++			}
++
++			std::shared_ptr<s_mob_db> mob = mobdb_search_aegisname( mobname.c_str() );
++
++			if( mob == nullptr ){
++				this->invalidWarning( mobNode, "Unknown monster \"%s\".\n", mobname.c_str() );
++				return 0;
++			}
++
++			if( std::find( rule.mob_ids.begin(), rule.mob_ids.end(), mob->id ) == rule.mob_ids.end() ){
++				rule.mob_ids.push_back( mob->id );
++			}
++		}
++	}
++
++	if( this->nodeExists( node, "Item" ) ){
++		std::string itemname;
++
++		if( !this->asString( node, "Item", itemname ) ){
++			return 0;
++		}
++
++		std::shared_ptr<item_data> item = item_db.search_aegisname( itemname.c_str() );
++
++		if( item == nullptr ){
++			this->invalidWarning( node["Item"], "Unknown item \"%s\".\n", itemname.c_str() );
++			return 0;
++		}
++
++		rule.item_id = item->nameid;
++	}
++
++	if( this->nodeExists( node, "ItemGroup" ) ){
++		std::string group_name;
++
++		if( !this->asString( node, "ItemGroup", group_name ) ){
++			return 0;
++		}
++
++		if( group_name.empty() ){
++			this->invalidWarning( node["ItemGroup"], "ItemGroup cannot be empty.\n" );
++			return 0;
++		}
++
++		if( ISDIGIT( group_name[0] ) ){
++			rule.item_group_id = static_cast<uint16>( std::stoul( group_name ) );
++		}else{
++			int64 group_constant;
++
++			if( !script_get_constant( group_name.c_str(), &group_constant ) ){
++				this->invalidWarning( node["ItemGroup"], "Unknown item group constant \"%s\".\n", group_name.c_str() );
++				return 0;
++			}
++
++			rule.item_group_id = static_cast<uint16>( group_constant );
++		}
++	}
++
++	if( ( rule.item_id == 0 && rule.item_group_id == 0 ) || ( rule.item_id != 0 && rule.item_group_id != 0 ) ){
++		this->invalidWarning( node, "Specify exactly one of Item or ItemGroup.\n" );
++		return 0;
++	}
++
++	if( rule.item_group_id > 0 && itemdb_group.find( rule.item_group_id ) == nullptr ){
++		this->invalidWarning( node["ItemGroup"], "Unknown ItemGroup id %hu.\n", rule.item_group_id );
++		return 0;
++	}
++
++	const ryml::NodeRef& rateNode = node["Rate"];
++
++	if( !this->asUInt16Rate( rateNode, "Min", rule.rate_min ) ){
++		return 0;
++	}
++
++	if( this->nodeExists( rateNode, "Max" ) ){
++		if( !this->asUInt16Rate( rateNode, "Max", rule.rate_max ) ){
++			return 0;
++		}
++	}else{
++		rule.rate_max = rule.rate_min;
++	}
++
++	if( rule.rate_max < rule.rate_min ){
++		this->invalidWarning( node["Rate"], "Rate.Max (%hu) must be >= Rate.Min (%hu).\n", rule.rate_max, rule.rate_min );
++		return 0;
++	}
++
++	if( this->nodeExists( node, "Bind" ) ){
++		std::string bind;
++
++		if( !this->asString( node, "Bind", bind ) ){
++			return 0;
++		}
++
++		if( bind == "Account" || bind == "account" || bind == "account_bound" || bind == "BOUND_ACCOUNT" ){
++			rule.bound = BOUND_ACCOUNT;
++		}else if( bind == "Character" || bind == "character" || bind == "Char" || bind == "char" || bind == "char_bound" || bind == "BOUND_CHAR" ){
++			rule.bound = BOUND_CHAR;
++		}else if( bind == "Free" || bind == "free" || bind == "Trade" || bind == "trade" || bind == "none" || bind == "BOUND_NONE" ){
++			rule.bound = BOUND_NONE;
++		}else{
++			this->invalidWarning( node["Bind"], "Invalid Bind value \"%s\". Use Free/Trade/None, Account or Character.\n", bind.c_str() );
++			return 0;
++		}
++	}
++
++	if( this->nodeExists( node, "RandomOptionGroup" ) ){
++		std::string group_name;
++
++		if( !this->asString( node, "RandomOptionGroup", group_name ) ){
++			return 0;
++		}
++
++		if( !random_option_group.option_get_id( group_name, rule.randomopt_group ) ){
++			this->invalidWarning( node["RandomOptionGroup"], "Unknown random option group \"%s\".\n", group_name.c_str() );
++			return 0;
++		}
++	}
++
++	mapdrops->rules.push_back( rule );
++
++	if( !exists ){
++		this->put( mapid, mapdrops );
++	}
++
++	return 1;
++}
++
++
+ /**
+  * Copy skill from DB to monster
+  * @param mob Monster DB entry
+@@ -7246,6 +7533,7 @@ static void mob_load(void)
+ 	mob_avail_db.load();
+ 	mob_summon_db.load();
+ 	map_drop_db.load();
++	mapflag_mobdrop_db.load();
+ 
+ 	mob_drop_ratio_adjust();
+ 	mob_skill_db_set();
+@@ -7368,6 +7656,11 @@ void mob_reload(void) {
+ 	map_foreachnpc(mob_reload_sub_npc);
+ }
+ 
++void mapflag_mobdrop_reload(){
++	mapflag_mobdrop_db.clear();
++	mapflag_mobdrop_db.load();
++}
++
+ /**
+  * Clear spawn data for all monsters
+  */
+@@ -7406,6 +7699,7 @@ void do_final_mob(bool is_reload){
+ 	mob_item_drop_ratio.clear();
+ 	mob_summon_db.clear();
+ 	map_drop_db.clear();
++	mapflag_mobdrop_db.clear();
+ 	if( !is_reload ) {
+ 		mob_delayed_drops.clear();
+ 	}
+diff --git a/src/map/mob.hpp b/src/map/mob.hpp
+index 5a3e010..63e977c 100644
+--- a/src/map/mob.hpp
++++ b/src/map/mob.hpp
+@@ -311,6 +311,32 @@ struct s_map_drops{
+ 	std::unordered_map<uint16, std::unordered_map<uint16, std::shared_ptr<s_mob_drop>>> specific;
+ };
+ 
++
++struct s_mapflag_mobdrop_rule {
++	std::vector<uint16> mob_ids; // empty = any monster
++	t_itemid item_id; // 0 when using item_group_id
++	uint16 item_group_id; // 0 when using item_id
++	uint16 rate_min;
++	uint16 rate_max;
++	bound_type bound;
++	uint16 randomopt_group;
++};
++
++struct s_mapflag_mobdrop_db {
++	uint16 mapid;
++	std::vector<s_mapflag_mobdrop_rule> rules;
++};
++
++class MapFlagMobDropDatabase : public TypesafeYamlDatabase<uint16, s_mapflag_mobdrop_db> {
++public:
++	MapFlagMobDropDatabase() : TypesafeYamlDatabase("MAPFLAG_MOBDROP_DB", 1) {
++
++	}
++
++	const std::string getDefaultLocation() override;
++	uint64 parseBodyNode(const ryml::NodeRef& node) override;
++};
++
+ class MapDropDatabase : public TypesafeYamlDatabase<uint16, s_map_drops>{
+ public:
+ 	MapDropDatabase() : TypesafeYamlDatabase( "MAP_DROP_DB", 2 ){
+@@ -325,6 +351,8 @@ private:
+ };
+ 
+ extern MapDropDatabase map_drop_db;
++extern MapFlagMobDropDatabase mapflag_mobdrop_db;
++void mapflag_mobdrop_reload();
+ extern std::unordered_map<uint16, std::vector<spawn_info>> mob_spawn_data;
+ 
+ struct s_dmglog{
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index 1523845..db2d75e 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5525,6 +5525,42 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+ 			break;
+ 		}
+ 
++		case MF_MOBDROP: {
++			union u_mapflag_args args = {};
++			int32 item_id = 0;
++			int32 rate = 0;
++			int32 mob_id = 0;
++
++			if (!state || !strcmpi(w4, "off")) {
++				map_setmapflag(m, MF_MOBDROP, false);
++				break;
++			}
++
++			int32 parsed = sscanf(w4, "%11d,%11d,%11d", &item_id, &rate, &mob_id);
++
++			if (parsed < 2) {
++				ShowWarning("npc_parse_mapflag: Invalid mobdrop args '%s' (file '%s', line '%d').\n", w4, filepath, strline(buffer, start - buffer));
++				break;
++			}
++
++			if (!item_db.exists(item_id)) {
++				ShowWarning("npc_parse_mapflag: Invalid item id %d for mobdrop mapflag (file '%s', line '%d').\n", item_id, filepath, strline(buffer, start - buffer));
++				break;
++			}
++
++			if (parsed >= 3 && !mob_db.exists(static_cast<uint16>(mob_id))) {
++				ShowWarning("npc_parse_mapflag: Invalid mob id %d for mobdrop mapflag (file '%s', line '%d').\n", mob_id, filepath, strline(buffer, start - buffer));
++				break;
++			}
++
++			args.mobdrop.item_id = static_cast<uint16>(item_id);
++			args.mobdrop.rate = static_cast<uint16>(cap_value(rate, 1, 10000));
++			args.mobdrop.mob_id = static_cast<uint16>(parsed >= 3 ? mob_id : 0);
++
++			map_setmapflag_sub(m, MF_MOBDROP, true, &args);
++			break;
++		}
++
+ 		case MF_BATTLEGROUND:
+ 			if (state) {
+ 				union u_mapflag_args args = {};
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index 6619439..fbbe5d0 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -10260,7 +10260,7 @@ int64 pc_readparam( const map_session_data* sd, int64 type )
+ 		case SP_COOKMASTERY:     val = sd->cook_mastery; break;
+ 		case SP_ACHIEVEMENT_LEVEL: val = sd->achievement_data.level; break;
+ 		case SP_CRITICAL:        val = sd->battle_status.cri/10; break;
+-		case SP_ASPD:            val = (AMOTION_ZERO_ASPD-sd->battle_status.amotion)/AMOTION_INTERVAL; break;
++		case SP_ASPD:            val = max(0, (AMOTION_ZERO_ASPD - sd->battle_status.amotion) / AMOTION_INTERVAL); break;
+ 		case SP_BASE_ATK:
+ #ifdef RENEWAL
+ 			val = sd->bonus.eatk;
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index 489f7ef..66199d5 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -537,6 +537,7 @@
+ 	export_constant(MF_SPECIALPOPUP);
+ 	export_constant(MF_NOMACROCHECKER);
+ 	export_constant(MF_INVINCIBLE_TIME);
++	export_constant(MF_MOBDROP);
+ 
+ 	/* setcell types */
+ 	export_constant(CELL_WALKABLE);
+diff --git a/src/map/status.cpp b/src/map/status.cpp
+index d11a4b0..7a2c8e6 100644
+--- a/src/map/status.cpp
++++ b/src/map/status.cpp
+@@ -2412,6 +2412,10 @@ int32 status_base_amotion_pc(map_session_data* sd, struct status_data* status)
+ 
+ 	// Raw delay adjustment from bAspd bonus
+ 	amotion += sd->bonus.aspd_add;
++
++	// Pre-Renewal ASPD cannot go below 0 (which would produce negative ASPD displays and overly delayed damage).
++	// Keep amotion below the zero-ASPD threshold to prevent invalid states when databases or bonuses are misconfigured.
++	amotion = min(amotion, AMOTION_ZERO_ASPD - 1);
+ 	return amotion;
+ #endif
+ }
+@@ -6429,7 +6433,8 @@ void status_calc_bl_main(block_list& bl, std::bitset<SCB_MAX> flag)
+ 			amotion += sd->bonus.aspd_add;
+ #endif
+ 			amotion = status_calc_fix_aspd(&bl, sc, amotion);
+-			status->amotion = cap_value(amotion, pc_maxaspd(sd)/AMOTION_DIVIDER_PC, MIN_ASPD/AMOTION_DIVIDER_PC);
++			// Prevent invalid negative ASPD display/behavior in pre-renewal by clamping to below zero-ASPD threshold.
++			status->amotion = cap_value(amotion, pc_maxaspd(sd)/AMOTION_DIVIDER_PC, AMOTION_ZERO_ASPD - 1);
+ 
+ 			status->adelay = AMOTION_DIVIDER_PC * status->amotion;
+ 		} else { // Mercenary and mobs

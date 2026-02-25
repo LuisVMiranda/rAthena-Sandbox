@@ -1,0 +1,86 @@
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index f3399bc..27c1e79 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -11112,7 +11112,7 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
+ 		clif_spawn(sd->ed);
+ 		clif_elemental_info(sd);
+ 		clif_elemental_updatestatus(*sd, SP_HP);
+-		clif_hpmeter_single( *sd, sd->ed->id, sd->ed->battle_status.hp, sd->ed->battle_status.max_hp );
++		clif_hpmeter_single( *sd, static_cast<uint32>( sd->ed->id ), static_cast<uint32>( sd->ed->battle_status.hp ), static_cast<uint32>( sd->ed->battle_status.max_hp ) );
+ 		clif_elemental_updatestatus(*sd, SP_SP);
+ 		status_calc_bl(sd->ed, { SCB_SPEED }); //Elemental mimic their master's speed on each map change
+ 	}
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index 4391878..b613df4 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -703,6 +703,7 @@ enum e_mapflag : int16 {
+ 	MF_NOCAMPFIRE,
+ 	MF_NO_MERCY,
+ 	MF_BLOOD_TAX,
++	MF_GEAR_LOCK,
+ 	MF_MAX
+ };
+ 
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index 4547c9f..60f63fd 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5733,6 +5733,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+ 			map_setmapflag(m, mapflag, state);
+ 			break;
+ 
++		case MF_GEAR_LOCK:
++			map_setmapflag(m, mapflag, state);
++			break;
++
+ 		// All others do not need special treatment
+ 		default:
+ 			map_setmapflag(m, mapflag, state);
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index ad66efb..49244a7 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -12042,6 +12042,16 @@ bool pc_equipitem(map_session_data *sd,int16 n,int32 req_pos,bool equipswitch)
+ 		}
+ 		return false;
+ 	}
++	if( map_getmapflag( sd->m, MF_GEAR_LOCK ) ){
++		if( equipswitch ){
++			clif_equipswitch_add( sd, n, req_pos, ITEM_EQUIP_ACK_FAIL );
++		}else{
++			clif_equipitemack( *sd, ITEM_EQUIP_ACK_FAIL, n );
++		}
++		clif_displaymessage( sd->fd, "A energia deste mapa impede a troca de equipamentos." );
++		return false;
++	}
++
+ 	if( DIFF_TICK(sd->canequip_tick,gettick()) > 0 ) {
+ 		if( equipswitch ){
+ 			clif_equipswitch_add( sd, n, req_pos, ITEM_EQUIP_ACK_FAIL );
+@@ -12421,6 +12431,12 @@ bool pc_unequipitem(map_session_data *sd, int32 n, int32 flag) {
+ 		clif_unequipitemack(*sd,n,0,false);
+ 		return false; //Nothing to unequip
+ 	}
++	if( map_getmapflag( sd->m, MF_GEAR_LOCK ) && !( flag & 2 ) ){
++		clif_unequipitemack( *sd, n, 0, false );
++		clif_displaymessage( sd->fd, "A energia deste mapa impede a troca de equipamentos." );
++		return false;
++	}
++
+ 	// status change that makes player cannot unequip equipment
+ 	if (!(flag&2) && !sd->sc.empty() &&( sd->sc.cant.unequip ||
+ 		(sd->sc.getSCE(SC_PYROCLASTIC) &&	sd->inventory_data[n]->type == IT_WEAPON)))	// can't switch weapon
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index 3646650..a364b77 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -541,6 +541,7 @@
+ 	export_constant(MF_NOCAMPFIRE);
+ 	export_constant(MF_NO_MERCY);
+ 	export_constant(MF_BLOOD_TAX);
++	export_constant(MF_GEAR_LOCK);
+ 
+ 	/* setcell types */
+ 	export_constant(CELL_WALKABLE);

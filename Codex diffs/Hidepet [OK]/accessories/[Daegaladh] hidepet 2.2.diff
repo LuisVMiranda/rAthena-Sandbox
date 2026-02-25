@@ -1,0 +1,197 @@
+ conf/import/atcommands.yml          | 46 ++++++++++++++++++++++++++++++++++
+ src/custom/atcommand.inc            | 50 +++++++++++++++++++++++++++++++++++++
+ src/custom/atcommand_def.inc        |  2 ++
+ src/custom/battle_config_init.inc   |  2 +-
+ src/custom/battle_config_struct.inc |  2 +-
+ src/map/clif.cpp                    |  4 +++
+ src/map/pc.cpp                      |  2 ++
+ src/map/pc.hpp                      |  1 +
+ 8 files changed, 107 insertions(+), 2 deletions(-)
+
+diff --git a/conf/import/atcommands.yml b/conf/import/atcommands.yml
+new file mode 100644
+index 000000000..64433ef16
+--- /dev/null
++++ b/conf/import/atcommands.yml
+@@ -0,0 +1,46 @@
++# This file is a part of rAthena.
++#   Copyright(C) 2017 rAthena Development Team
++#   https://rathena.org - https://github.com/rathena
++#
++# This program is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 3 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program. If not, see <http://www.gnu.org/licenses/>.
++#
++###########################################################################
++# Atcommand Database
++###########################################################################
++#
++# Atcommand Settings
++#
++###########################################################################
++# - Command                  Command name.
++#   Aliases:                 Aliases for the command. (Optional)
++#     - <AliasName>
++#   Help                     Help message for the command. (Optional)
++###########################################################################
++
++Header:
++  Type: ATCOMMAND_DB
++  Version: 1
++
++Body:
++  - Command: hidepet
++    Aliases:
++      - hidepets
++    Help: |
++      Hides or shows all pets except yours.
++  - Command: hidepetall
++    Aliases:
++      - hideallpet
++      - hideallpets
++    Help: |
++      Hides or shows all pets, including yours.
+diff --git a/src/custom/atcommand.inc b/src/custom/atcommand.inc
+index 9dd4a3856..90640348e 100644
+--- a/src/custom/atcommand.inc
++++ b/src/custom/atcommand.inc
+@@ -17,3 +17,53 @@
+ //	clif_specialeffect(&sd->bl, EF_HEARTCASTING, AREA);
+ //	return 0;
+ //}
++
++/**
++ * @hidepet - Hides all pets except the player's pet.
++ * @hidepetall - Hides all pets, including the player's pet.
++ * [Daegaladh]
++ */
++static int atcommand_hidepet_sub(block_list* bl, va_list ap)
++{
++	map_session_data* sd = va_arg(ap, map_session_data*);
++
++	if (!va_arg(ap, int) && sd->pd != nullptr && sd->pd->bl.id == bl->id) {
++		if(va_arg(ap, int) == 2)
++			clif_spawn(&sd->pd->bl, true);
++		return 0;
++	}
++
++	clif_clearunit_single(bl->id, CLR_OUTSIGHT, *sd);
++	return 0;
++}
++ACMD_FUNC(hidepet)
++{
++	nullpo_retr(-1,sd);
++
++	parent_cmd = atcommand_alias_db.checkAlias(command + 1);
++	bool all = (strcmpi(parent_cmd, "hidepetall") == 0) ? true : false;
++	uint8 prev_state = sd->state.hidepet;
++
++	switch(sd->state.hidepet) {
++	case 0:
++		sd->state.hidepet = all ? 2 : 1;
++		break;
++	case 1:
++		sd->state.hidepet = all ? 2 : 0;
++		break;
++	case 2:
++		sd->state.hidepet = all ? 0 : 1;
++		break;
++	}
++
++	if(sd->state.hidepet == 0) {
++		map_foreachinallrange(clif_insight, &sd->bl, AREA_SIZE, BL_PET, &sd->bl);
++		clif_displaymessage(fd, "All pets are visible.");
++	}
++	else {
++		map_foreachinallrange(atcommand_hidepet_sub, &sd->bl, AREA_SIZE, BL_PET, &sd->bl, all, prev_state);
++		clif_displaymessage(fd, all ? "All pets are hidden." : "All pets except yours are hidden.");
++	}
++
++	return 0;
++}
+diff --git a/src/custom/atcommand_def.inc b/src/custom/atcommand_def.inc
+index 54d9e74ba..4eebe5c84 100644
+--- a/src/custom/atcommand_def.inc
++++ b/src/custom/atcommand_def.inc
+@@ -9,3 +9,5 @@
+  **/
+ 
+ //ACMD_DEF(newcommand),
++ACMD_DEF(hidepet),
++ACMD_DEF2("hidepetall", hidepet),
+diff --git a/src/custom/battle_config_init.inc b/src/custom/battle_config_init.inc
+index e47aca9be..db9464a0f 100644
+--- a/src/custom/battle_config_init.inc
++++ b/src/custom/battle_config_init.inc
+@@ -10,4 +10,4 @@
+  * Format:
+  *	 { "name", &battle_config.<variable name>, <default value>, <minimum value>, <maximum value> },
+  **/
+-
++	{ "hide_pet",                           &battle_config.hide_pet,                        0,      0,      2,              },
+diff --git a/src/custom/battle_config_struct.inc b/src/custom/battle_config_struct.inc
+index 017d99d07..ecf004133 100644
+--- a/src/custom/battle_config_struct.inc
++++ b/src/custom/battle_config_struct.inc
+@@ -11,4 +11,4 @@
+  * Format:
+  *	 <datatype> name;
+  **/
+-
++int hide_pet;
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index cca7057d8..db132511c 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -422,6 +422,8 @@ static int clif_send_sub(struct block_list *bl, va_list ap)
+ 	case AREA_WOS:
+ 		if (bl == src_bl)
+ 			return 0;
++		if (src_bl->type == BL_PET && (sd->state.hidepet == 2 || (sd->state.hidepet == 1 && !(sd->pd != nullptr && sd->pd->bl.id == src_bl->id))))
++			return 0;
+ 	break;
+ 	case AREA_WOC:
+ 		if (sd->chatID || bl == src_bl)
+@@ -4977,6 +4979,8 @@ void clif_getareachar_unit( map_session_data* sd,struct block_list *bl ){
+ 	if (clif_npc_mayapurple(bl))
+ 		return;
+ 
++	if (bl->type == BL_PET && (sd->state.hidepet == 2 || (sd->state.hidepet == 1 && !(sd->pd != nullptr && sd->pd->bl.id == bl->id))))
++		return;
+ 	if( bl->type == BL_NPC && npc_is_hidden_dynamicnpc( *( (struct npc_data*)bl ), *sd ) ){
+ 		// Do not send anything
+ 		return;
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index f34f398ee..6b73c6620 100755
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -2107,6 +2107,8 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
+ 	if (!(battle_config.display_skill_fail&2))
+ 		sd->state.showdelay = 1;
+ 
++	if (battle_config.hide_pet)
++		sd->state.hidepet = battle_config.hide_pet;
+ 	memset(&sd->inventory, 0, sizeof(struct s_storage));
+ 	memset(&sd->cart, 0, sizeof(struct s_storage));
+ 	memset(&sd->storage, 0, sizeof(struct s_storage));
+diff --git a/src/map/pc.hpp b/src/map/pc.hpp
+index ab57cc4c0..7568b77fb 100644
+--- a/src/map/pc.hpp
++++ b/src/map/pc.hpp
+@@ -456,6 +456,7 @@ public:
+ 		bool roulette_open;
+ 		t_itemid item_reform;
+ 		uint64 item_enchant_index;
++		uint8 hidepet;
+ 	} state;
+ 	struct {
+ 		unsigned char no_weapon_damage, no_magic_damage, no_misc_damage;

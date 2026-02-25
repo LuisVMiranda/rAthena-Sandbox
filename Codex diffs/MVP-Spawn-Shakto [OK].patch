@@ -1,0 +1,139 @@
+diff --git a/conf/battle/monster.conf b/conf/battle/monster.conf
+index cb1f1521b..3f0088f41 100644
+--- a/conf/battle/monster.conf
++++ b/conf/battle/monster.conf
+@@ -239,7 +239,7 @@ mvp_tomb_enabled: yes
+ 
+ // Delay before the MVP tomb is spawned.
+ // Default: 9 seconds
+-mvp_tomb_delay: 9000
++mvp_tomb_delay: 1000
+ 
+ // Whether or not the size of specially summoned mobs influences experience, drop rates,
+ // and stats. The rates will be doubled for large mobs, and halved for small ones.
+diff --git a/src/map/mob.cpp b/src/map/mob.cpp
+index 4f5da9752..b5e5578b8 100644
+--- a/src/map/mob.cpp
++++ b/src/map/mob.cpp
+@@ -33,6 +33,7 @@
+ #include "itemdb.hpp"
+ #include "log.hpp"
+ #include "map.hpp"
++#include "mapreg.hpp"
+ #include "mercenary.hpp"
+ #include "npc.hpp"
+ #include "party.hpp"
+@@ -1188,6 +1189,12 @@ int mob_spawn (struct mob_data *md)
+ 		clif_spawn(&md->bl);
+ 	skill_unit_move(&md->bl,tick,1);
+ 	mobskill_use(md, tick, MSC_SPAWN);
++
++	if(md->spawn && md->spawn->state.boss){
++		std::string mapregname = "$" + std::to_string(md->mob_id) + "_" + std::to_string(md->bl.m);
++		mapreg_setreg(reference_uid( add_str( mapregname.c_str() ), 0 ),2);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -3165,6 +3172,16 @@ int mob_dead(struct mob_data *md, struct block_list *src, int type)
+ 	if (battle_config.mvp_tomb_enabled && md->spawn->state.boss && map_getmapflag(md->bl.m, MF_NOTOMB) != 1)
+ 		mvptomb_create(md, mvp_sd ? mvp_sd->status.name : NULL, time(NULL));
+ 
++	if(md->spawn->state.boss){
++		std::string mapregname = "$" + std::to_string(md->db->id) + "_" + std::to_string(md->bl.m);
++		std::string mapregnamestr = mapregname + "$";
++		mapreg_setreg(reference_uid( add_str( mapregname.c_str() ), 0 ),1);
++		mapreg_setreg(reference_uid( add_str( mapregname.c_str() ), 1 ),md->bl.x);
++		mapreg_setreg(reference_uid( add_str( mapregname.c_str() ), 2 ),md->bl.y);
++		mapreg_setreg(reference_uid( add_str( mapregname.c_str() ), 3 ),time(NULL));
++		mapreg_setregstr(reference_uid( add_str( mapregnamestr.c_str() ), 4),mvp_sd ? mvp_sd->status.name : NULL);
++	}
++
+ 	if( !rebirth )
+ 		mob_setdelayspawn(md); //Set respawning.
+ 	return 3; //Remove from map.
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index f3c71c1ed..8367c5329 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -29,6 +29,7 @@
+ #include "log.hpp"
+ #include "log.hpp"
+ #include "map.hpp"
++#include "mapreg.hpp"
+ #include "mob.hpp"
+ #include "pc.hpp"
+ #include "pet.hpp"
+@@ -5026,6 +5027,71 @@ void npc_parse_mob2(struct spawn_data* mob)
+ 	for( i = mob->active; i < mob->num; ++i )
+ 	{
+ 		struct mob_data* md = mob_spawn_dataset(mob);
++		/* Index on mapreg $ + mob_id + mapindex
++		* 0 = state
++		* 1 = pos_x
++		* 2 = pos_y
++		* 3 = timer
++		* 4 = killerid
++		*/
++		if(md->state.boss){
++			std::string mapregname = "$" + std::to_string(md->db->id) + "_" + std::to_string(md->bl.m);
++
++			if(1 == mapreg_readreg(reference_uid( add_str( mapregname.c_str() ), 0 ))){ //1 = dead - 2 = alive
++				long int timer = static_cast<long int>(mapreg_readreg(reference_uid(add_str(mapregname.c_str()),3)));
++				long int now = static_cast<long int>(time(NULL));
++
++				long int difftime = mob->delay1; //Base respawn time
++				if (mob->delay2) //random variance
++					difftime+= rnd()%mob->delay2;
++
++				difftime = now - timer - (difftime/1000);
++
++				if(difftime < 0){ //mvp is still dead
++					if (battle_config.mvp_tomb_enabled && map_getmapflag(md->bl.m, MF_NOTOMB) != 1){ //is tomb enabled ?
++						std::string mapregnamestr = mapregname + "$";
++						int old_pos_x = md->bl.x;
++						int old_pos_y = md->bl.y;
++						md->bl.x = static_cast<int16>(mapreg_readreg(reference_uid(add_str(mapregname.c_str()),1)));
++						md->bl.y = static_cast<int16>(mapreg_readreg(reference_uid(add_str(mapregname.c_str()),2)));
++						char* killerid = mapreg_readregstr(reference_uid(add_str(mapregnamestr.c_str()),4));
++						mvptomb_create(md, killerid, timer);
++						md->bl.x= old_pos_x;
++						md->bl.y= old_pos_y;
++					}
++
++					difftime = abs(difftime)*1000;
++
++					//Apply the spawn delay fix
++					std::shared_ptr<s_mob_db> db = mob_db.find(md->db->id);
++
++					if (status_has_mode(&db->status,MD_STATUSIMMUNE)) { // Status Immune
++						if (battle_config.boss_spawn_delay != 100) {
++							// Divide by 100 first to prevent overflows
++							//(precision loss is minimal as duration is in ms already)
++							difftime = difftime/100*battle_config.boss_spawn_delay;
++						}
++					} else if (status_has_mode(&db->status,MD_IGNOREMELEE|MD_IGNOREMAGIC|MD_IGNORERANGED|MD_IGNOREMISC)) { // Plant type
++						if (battle_config.plant_spawn_delay != 100) {
++							difftime = difftime/100*battle_config.plant_spawn_delay;
++						}
++					} else if (battle_config.mob_spawn_delay != 100) {	//Normal mobs
++						difftime = difftime/100*battle_config.mob_spawn_delay;
++					}
++
++					if (difftime < 5000) //Monsters should never respawn faster than within 5 seconds
++						difftime = 5000;
++
++					if( md->spawn_timer != INVALID_TIMER )
++						delete_timer(md->spawn_timer, mob_delayspawn);
++
++					md->spawn = mob;
++					md->spawn->active++;
++					md->spawn_timer = add_timer(gettick()+difftime,mob_delayspawn,md->bl.id,0);
++					continue;
++				}
++			}
++		}
+ 		md->spawn = mob;
+ 		md->spawn->active++;
+ 		mob_spawn(md);

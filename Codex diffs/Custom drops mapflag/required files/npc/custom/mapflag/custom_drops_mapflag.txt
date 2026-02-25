@@ -1,0 +1,22 @@
+//============================================================
+// Custom Drops Mapflag - Sample Configuration
+//============================================================
+// Syntax:
+//   <mapname>\tmapflag\tmobdrop\t<item_id>,<rate>{,<mob_id>}
+//
+// Notes:
+// - item_id: item database id to be dropped.
+// - rate: drop chance from 1~10000 (10000 = 100%).
+// - mob_id (optional): if provided, only that monster can trigger the drop.
+//   if omitted or 0, any monster on the map can trigger the drop.
+// - Use "off" to remove all mobdrop entries from the map.
+//
+// Examples:
+// Every monster in prontera has a 5% chance to drop Apple (id 512)
+prontera\tmapflag\tmobdrop\t512,500
+
+// Only Poring (id 1002) in prontera has a 1% chance to drop Jellopy (id 909)
+prontera\tmapflag\tmobdrop\t909,100,1002
+
+// Disable custom drops on map
+// prontera\tmapflag\tmobdrop\toff

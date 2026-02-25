@@ -1,0 +1,19 @@
+// ----- Campfire localized messages ----- //
+2901: You entered the Campfire regeneration zone.
+2902: You left the Campfire regeneration zone.
+2903: Campfire ends in %d...
+2904: Campfire owner: %s | Remaining time: %d seconds.
+2905: Campfire created.
+2906: VIP Campfire created.
+2911: Voce entrou na area de regeneracao da Fogueira.
+2912: Voce saiu da area de regeneracao da Fogueira.
+2913: Fogueira termina em %d...
+2914: Dono da Fogueira: %s | Tempo restante: %d segundos.
+2915: Fogueira criada.
+2916: Fogueira VIP criada.
+2921: Has entrado en la zona de regeneracion de la Fogata.
+2922: Has salido de la zona de regeneracion de la Fogata.
+2923: La fogata termina en %d...
+2924: Dueno de la Fogata: %s | Tiempo restante: %d segundos.
+2925: Fogata creada.
+2926: Fogata VIP creada.

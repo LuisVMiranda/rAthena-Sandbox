@@ -1,0 +1,242 @@
+diff --git a/npc/custom/eBG/bg_common.txt b/npc/custom/eBG/bg_common.txt
+index 218e3ec..b133e01 100644
+--- a/npc/custom/eBG/bg_common.txt
++++ b/npc/custom/eBG/bg_common.txt
+@@ -80,7 +80,7 @@ bat_room,161,158,3	duplicate(bat_aid)	General Guillaume's Aid::bat_aid4	4_M_KY_H
+ // Flags
+ // *********************************************************************
+ 
+--	script	Base Flag#bg	FAKE_NPC,{ end; }
++	script	Base Flag#bg	FAKE_NPC,{ end; }
+ 
+ // BattleGround Warper - Exit
+ // *********************************************************************
+@@ -413,7 +413,7 @@ S_BuyConsumableWOE:
+ 	close;
+ }
+ 
+--	script	Maroll Battle Recruiter::BatRecruit	728,{
++	script	Maroll Battle Recruiter::BatRecruit	728,{
+ 	mes "[Maroll Battle Recruiter]";
+ 	mes "Good day, adventurer.";
+ 	mes "I'm a knight from a far country called Maroll Kingdom.";
+diff --git a/npc/custom/eBG/bg_conquest.txt b/npc/custom/eBG/bg_conquest.txt
+index 125ab9d..b831d4d 100644
+--- a/npc/custom/eBG/bg_conquest.txt
++++ b/npc/custom/eBG/bg_conquest.txt
+@@ -19,7 +19,7 @@
+ // Battleground Engine
+ // *********************************************************************
+ 
+--	script	Conquest	FAKE_NPC,{
++	script	Conquest	FAKE_NPC,{
+ 	end;
+ 
+ OnInit:
+@@ -659,7 +659,7 @@ OnInit:
+ // Battleground Respawn
+ // *********************************************************************
+ 
+--	script	Conquest_Respawn	FAKE_NPC,{
++	script	Conquest_Respawn	FAKE_NPC,{
+ 	end;
+ 
+ OnStart:
+diff --git a/npc/custom/eBG/bg_core.txt b/npc/custom/eBG/bg_core.txt
+index 187ee4e..9d2274f 100644
+--- a/npc/custom/eBG/bg_core.txt
++++ b/npc/custom/eBG/bg_core.txt
+@@ -13,7 +13,7 @@
+ //============================================================
+ 
+ // Battleground Core Script
+--	script	BG_Core	-1,{
++	script	BG_Core	-1,{
+ 	end;
+ 
+ OnInit:
+diff --git a/npc/custom/eBG/bg_flavius_ctf.txt b/npc/custom/eBG/bg_flavius_ctf.txt
+index 1500eeb..b31f29d 100644
+--- a/npc/custom/eBG/bg_flavius_ctf.txt
++++ b/npc/custom/eBG/bg_flavius_ctf.txt
+@@ -15,7 +15,7 @@
+ // Battleground Engine
+ // *********************************************************************
+ 
+--	script	Flavius_CTF	FAKE_NPC,{
++	script	Flavius_CTF	FAKE_NPC,{
+ 	end;
+ 
+ OnInit:
+diff --git a/npc/custom/eBG/bg_flavius_sc.txt b/npc/custom/eBG/bg_flavius_sc.txt
+index 4d5b4dc..04475eb 100644
+--- a/npc/custom/eBG/bg_flavius_sc.txt
++++ b/npc/custom/eBG/bg_flavius_sc.txt
+@@ -16,7 +16,7 @@
+ // BattleGround System - Flavius Stone Control
+ // ==============================================================================*/
+ 
+--	script	Flavius_SC	-1,{
++	script	Flavius_SC	-1,{
+ 	end;
+ 
+ OnInit:
+diff --git a/npc/custom/eBG/bg_flavius_td.txt b/npc/custom/eBG/bg_flavius_td.txt
+index d51238a..5b8d7a8 100644
+--- a/npc/custom/eBG/bg_flavius_td.txt
++++ b/npc/custom/eBG/bg_flavius_td.txt
+@@ -17,7 +17,7 @@
+ // Battleground Engine
+ // *********************************************************************
+ 
+--	script	Flavius_TD	FAKE_NPC,{
++	script	Flavius_TD	FAKE_NPC,{
+ 	end;
+ 
+ OnInit:
+diff --git a/npc/custom/eBG/bg_rush.txt b/npc/custom/eBG/bg_rush.txt
+index 77a09cd..8c3929a 100644
+--- a/npc/custom/eBG/bg_rush.txt
++++ b/npc/custom/eBG/bg_rush.txt
+@@ -19,7 +19,7 @@
+ // Battleground Engine
+ // *********************************************************************
+ 
+--	script	Rush	FAKE_NPC,{
++	script	Rush	FAKE_NPC,{
+ 	end;
+ 
+ OnInit:
+@@ -241,7 +241,7 @@ OnEnd:
+ // Battleground Respawn
+ // *********************************************************************
+ 
+--	script	Rush_Respawn	FAKE_NPC,{
++	script	Rush_Respawn	FAKE_NPC,{
+ 	end;
+ 
+ OnResetTimer:
+diff --git a/npc/custom/eBG/bg_tierra_boss.txt b/npc/custom/eBG/bg_tierra_boss.txt
+index 0469783..e82df12 100644
+--- a/npc/custom/eBG/bg_tierra_boss.txt
++++ b/npc/custom/eBG/bg_tierra_boss.txt
+@@ -19,7 +19,7 @@
+ // BattleGround System - Tierra Bossnia
+ // ==============================================================================*/
+ 
+--	script	Tierra_Boss	-1,{
++	script	Tierra_Boss	-1,{
+ 	end;
+ 
+ OnInit:
+@@ -163,7 +163,7 @@ OnEnd:
+ 	end;
+ }
+ 
+--	script	Guillaume_Boss	-1,{
++	script	Guillaume_Boss	-1,{
+ 	end;
+ 
+ OnSummon:
+@@ -213,7 +213,7 @@ OnBoss:
+ 	end;
+ }
+ 
+--	script	Croix_Boss	-1,{
++	script	Croix_Boss	-1,{
+ 	end;
+ 
+ OnSummon:
+@@ -263,7 +263,7 @@ OnBoss:
+ 	end;
+ }
+ 
+--	script	Balance_Flag	-1,{
++	script	Balance_Flag	-1,{
+ 	end;
+ 
+ OnBGStart:
+diff --git a/npc/custom/eBG/bg_tierra_dom.txt b/npc/custom/eBG/bg_tierra_dom.txt
+index 7a24676..f4b8798 100644
+--- a/npc/custom/eBG/bg_tierra_dom.txt
++++ b/npc/custom/eBG/bg_tierra_dom.txt
+@@ -19,7 +19,7 @@
+ // Battleground Engine
+ // *********************************************************************
+ 
+--	script	Tierra_DOM	FAKE_NPC,{
++	script	Tierra_DOM	FAKE_NPC,{
+ 	end;
+ 
+ OnInit:
+diff --git a/npc/custom/eBG/bg_tierra_ti.txt b/npc/custom/eBG/bg_tierra_ti.txt
+index 3a6f1ca..5e06f8a 100644
+--- a/npc/custom/eBG/bg_tierra_ti.txt
++++ b/npc/custom/eBG/bg_tierra_ti.txt
+@@ -19,7 +19,7 @@
+ // Battleground Engine
+ // *********************************************************************
+ 
+--	script	Tierra_TI	-1,{
++	script	Tierra_TI	-1,{
+ 	end;
+ 
+ OnInit:
+diff --git a/src/map/script.cpp b/src/map/script.cpp
+index 5d1135c..442883b 100644
+--- a/src/map/script.cpp
++++ b/src/map/script.cpp
+@@ -21622,7 +21622,13 @@ BUILDIN_FUNC(bg_queue_join)
+ BUILDIN_FUNC(getcharqueue)
+ {
+ 	TBL_PC* sd = nullptr;
+-	if (!script_charid2sd(2, sd) || sd == nullptr) {
++
++	if( script_hasdata(st, 2) ) {
++		if (!script_charid2sd(2, sd) || sd == nullptr) {
++			script_pushint(st, -1);
++			return SCRIPT_CMD_SUCCESS;
++		}
++	} else if (!script_rid2sd(sd) || sd == nullptr) {
+ 		script_pushint(st, -1);
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+@@ -21839,6 +21845,27 @@ BUILDIN_FUNC(bg_emotions)
+ 	return SCRIPT_CMD_SUCCESS;
+ }
+ 
++BUILDIN_FUNC(bg_emotion)
++{
++	int32 emotion = script_getnum(st, 2);
++	int32 bg_id = script_getnum(st, 3);
++	std::shared_ptr<s_battleground_data> bg = util::umap_find(bg_team_db, bg_id);
++
++	if( bg == nullptr )
++		return SCRIPT_CMD_SUCCESS;
++
++	if( emotion < ET_SURPRISE || emotion >= ET_MAX )
++		emotion = ET_SURPRISE;
++
++	for( const auto& member : bg->members ){
++		if( member.sd == nullptr )
++			continue;
++		clif_emotion( *member.sd, static_cast<emotion_type>(emotion) );
++	}
++
++	return SCRIPT_CMD_SUCCESS;
++}
++
+ /// Compatibility helper for legacy EasyCore BG packs.
+ /// bg_announce(<message>, <hex_color>)
+ BUILDIN_FUNC(bg_announce)
+@@ -28556,8 +28583,9 @@ struct script_function buildin_func[] = {
+ 	BUILDIN_DEF(bg_team_reveal,"ii"),
+ 	BUILDIN_DEF(bg_warp_cemetery,"i"),
+ 	BUILDIN_DEF(bg_emotions,"ii"),
++	BUILDIN_DEF(bg_emotion,"ii"),
+ 	BUILDIN_DEF(bg_announce,"ss"),
+-	BUILDIN_DEF(getcharqueue,"i"),
++	BUILDIN_DEF(getcharqueue,"?"),
+ 	BUILDIN_DEF(viewpointmap2,"siiiii"),
+ 
+ 	// Instancing

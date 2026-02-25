@@ -1,0 +1,362 @@
+diff --git a/conf/atcommands.yml b/conf/atcommands.yml
+index 9ff52bbf257cb4faa4d71274f5e43fe49cba0df6..67de1be01f86d7fba2b7bb745d5d737b37f8009f 100644
+--- a/conf/atcommands.yml
++++ b/conf/atcommands.yml
+@@ -133,6 +133,11 @@ Body:
+       - at
+     Help: |
+       Allows you to vend while you are offline.
++  - Command: autovend
++    Aliases:
++      - av
++    Help: |
++      Allows vending-only offline mode and supports account-level autovend restrictions.
+   - Command: ban
+     Aliases:
+       - banish
+@@ -1266,6 +1271,16 @@ Body:
+     Help: |
+       Params: <quest ID>
+       Activates the quest with quest ID <quest ID>.
++  - Command: hidepet
++    Aliases:
++      - hidepetall
++    Help: |
++      Hides or shows pets around you.
++      @hidepet hides other players' pets.
++      @hidepetall hides all pets, including yours.
++  - Command: spbar
++    Help: |
++      Toggles party SP bar updates for supported clients.
+   - Command: showdelay
+     Help: |
+       Shows/hides the "There is a delay after this skill" message.
+diff --git a/src/map/atcommand.cpp b/src/map/atcommand.cpp
+index 30d14f7705bf80667abf15c5702df9e9b3e3622e..1f721c80755df6e24fe68a3950135ee66dbeae00 100644
+--- a/src/map/atcommand.cpp
++++ b/src/map/atcommand.cpp
+@@ -4914,6 +4914,8 @@ ACMD_FUNC(mapinfo) {
+ 		strcat(atcmd_output, " NoTomb |");
+ 	if (map_getmapflag(m_id, MF_NOCOSTUME))
+ 		strcat(atcmd_output, " NoCostume |");
++	if (map_getmapflag(m_id, MF_NORESS))
++		strcat(atcmd_output, " NoRess |");
+ 	if (map_getmapflag(m_id, MF_NOBANK))
+ 		strcat(atcmd_output, " NoBank |");
+ 	if (map_getmapflag(m_id, MF_NOCASHSHOP))
+@@ -6819,11 +6821,21 @@ ACMD_FUNC(autotrade) {
+ 		return -1;
+ 	}
+ 
++	if (vending_autovend_check(sd->status.account_id)) {
++		clif_displaymessage(fd, "You already have an active @autovend on this account.");
++		return -1;
++	}
++
+ 	if( !sd->state.vending && !sd->state.buyingstore ) { //check if player is vending or buying
+ 		clif_displaymessage(fd, msg_txt(sd,549)); // "You should have a shop open to use @autotrade."
+ 		return -1;
+ 	}
+ 
++	if (sd->state.vending && battle_config.autovend_enable && battle_config.autovend_all_vending) {
++		vending_create_autovend(*sd);
++		return 0;
++	}
++
+ 	sd->state.autotrade = 1;
+ 	if (battle_config.autotrade_monsterignore)
+ 		sd->state.block_action |= PCBLOCK_IMMUNE;
+@@ -6850,6 +6862,38 @@ ACMD_FUNC(autotrade) {
+ 	return 0;
+ }
+ 
++ACMD_FUNC(autovend) {
++	nullpo_retr(-1, sd);
++
++	if (!battle_config.autovend_enable) {
++		clif_displaymessage(fd, "Autovend is disabled.");
++		return -1;
++	}
++
++	if (map_getmapflag(sd->m, MF_AUTOTRADE) != battle_config.autotrade_mapflag) {
++		clif_displaymessage(fd, "Autovend is not allowed on this map.");
++		return -1;
++	}
++
++	if (pc_isdead(sd)) {
++		clif_displaymessage(fd, "You cannot autovend when dead.");
++		return -1;
++	}
++
++	if (!sd->state.vending) {
++		clif_displaymessage(fd, msg_txt(sd,549)); // "You should have a shop open to use @autotrade."
++		return -1;
++	}
++
++	if (vending_autovend_check(sd->status.account_id)) {
++		clif_displaymessage(fd, "You already have an active @autovend on this account.");
++		return -1;
++	}
++
++	vending_create_autovend(*sd);
++	return 0;
++}
++
+ /*==========================================
+  * @changegm by durf (changed by Lupus)
+  * Changes Master of your Guild to a specified guild member
+@@ -9189,6 +9233,91 @@ ACMD_FUNC(showdelay)
+ 	return 0;
+ }
+ 
++static int32 atcommand_hidepet_sub(block_list* bl, va_list ap) {
++	map_session_data* sd = va_arg(ap, map_session_data*);
++	const bool hide_all = va_arg(ap, int32) != 0;
++
++	nullpo_ret(sd);
++	nullpo_ret(bl);
++
++	if (!hide_all && sd->pd != nullptr && sd->pd->id == bl->id) {
++		return 0;
++	}
++
++	clif_clearunit_single(bl->id, CLR_OUTSIGHT, *sd);
++	return 0;
++}
++
++ACMD_FUNC(hidepet) {
++	nullpo_retr(-1, sd);
++
++	const char* base_command = command;
++	if (base_command != nullptr && (*base_command == atcommand_symbol || *base_command == charcommand_symbol)) {
++		++base_command;
++	}
++
++	base_command = atcommand_alias_db.checkAlias(base_command != nullptr ? base_command : "hidepet");
++	const bool hide_all = base_command != nullptr && strcmpi(base_command, "hidepetall") == 0;
++	const uint8 previous_state = sd->state.hidepet;
++
++	switch (sd->state.hidepet) {
++		case 0: sd->state.hidepet = hide_all ? 2 : 1; break;
++		case 1: sd->state.hidepet = hide_all ? 2 : 0; break;
++		default: sd->state.hidepet = hide_all ? 0 : 1; break;
++	}
++
++	if (sd->state.hidepet == 0) {
++		map_foreachinallrange(clif_insight, sd, AREA_SIZE, BL_PET, sd);
++		if (previous_state == 2 && sd->pd != nullptr) {
++			clif_spawn(sd->pd, true);
++		}
++		clif_displaymessage(fd, "All pets are visible.");
++	} else {
++		map_foreachinallrange(atcommand_hidepet_sub, sd, AREA_SIZE, BL_PET, sd, hide_all ? 1 : 0);
++		clif_displaymessage(fd, hide_all ? "All pets are hidden." : "All pets except yours are hidden.");
++	}
++
++	return 0;
++}
++
++ACMD_FUNC(spbar) {
++	nullpo_retr(-1, sd);
++
++	battle_config.party_sp_on = 1 - battle_config.party_sp_on;
++
++	struct s_mapiterator* iter = mapit_getallusers();
++	for (map_session_data* pl_sd = static_cast<map_session_data*>(mapit_first(iter)); mapit_exists(iter); pl_sd = static_cast<map_session_data*>(mapit_next(iter))) {
++		if (pl_sd == nullptr) {
++			continue;
++		}
++		clif_refresh(pl_sd);
++	}
++	mapit_free(iter);
++
++	clif_displaymessage(fd, battle_config.party_sp_on ? "Party SP bar is enabled." : "Party SP bar is disabled.");
++	return 0;
++}
++
++ACMD_FUNC(partybuff) {
++	nullpo_retr(-1, sd);
++
++	if( sd->status.party_id == 0 ) {
++		clif_displaymessage(fd, msg_txt(sd,1071));
++		return -1;
++	}
++
++	party_data* p = party_search(sd->status.party_id);
++	if( p == nullptr ) {
++		clif_displaymessage(fd, msg_txt(sd,1071));
++		return -1;
++	}
++
++	sd->state.spb = !sd->state.spb;
++	clif_displaymessage(fd, sd->state.spb ? msg_txt(sd,1073) : msg_txt(sd,1072));
++	clif_party_info(*p, sd);
++	return 0;
++}
++
+ /*==========================================
+  * Duel organizing functions [LuzZza]
+  *
+@@ -11464,6 +11593,19 @@ ACMD_FUNC(macrochecker){
+ 	return 0;
+ }
+ 
++ACMD_FUNC(showrecovery)
++{
++	sd->showrecovery = !sd->showrecovery;
++	pc_setglobalreg(sd, add_str("AT_showrecovery"), sd->showrecovery);
++
++	if (sd->showrecovery)
++		clif_displaymessage(fd, "Hp/sp recovery numbers is visible");
++	else
++		clif_displaymessage(fd, "Hp/sp recovery numbers is hidden");
++
++	return 0;
++}
++
+ #include <custom/atcommand.inc>
+ 
+ /**
+@@ -11708,7 +11850,14 @@ void atcommand_basecommands(void) {
+ 		ACMD_DEF(showexp),
+ 		ACMD_DEF(showzeny),
+ 		ACMD_DEF(showdelay),
++		ACMD_DEF(hidepet),
++		ACMD_DEF2("hidepetall", hidepet),
++		ACMD_DEF(spbar),
++		ACMD_DEF(partybuff),
++		ACMD_DEF2("spb", partybuff),
+ 		ACMD_DEF(autotrade),
++		ACMD_DEF(autovend),
++		ACMD_DEF2("av", autovend),
+ 		ACMD_DEF(changegm),
+ 		ACMD_DEF(changeleader),
+ 		ACMD_DEF(partyoption),
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index 29bde3e97a839d52adc69781902e85f1bc3fc7bc..d1139eb537849ad1dcda3a791852fa1a39822331 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -2133,6 +2133,9 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
+ 	sd->skill_keep_using.level = 0;
+ 	sd->skill_keep_using.target = 0;
+ 
++	sd->skill_animation.tid = INVALID_TIMER;
++	sd->skill_animation.step = 0;
++
+ #ifdef SECURE_NPCTIMEOUT
+ 	// Initialize to defaults/expected
+ 	sd->npc_idle_timer = INVALID_TIMER;
+@@ -2169,6 +2172,8 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
+ 
+ 	if (!(battle_config.display_skill_fail&2))
+ 		sd->state.showdelay = 1;
++	if (battle_config.hide_pet > 0)
++		sd->state.hidepet = static_cast<uint8>(battle_config.hide_pet);
+ 
+ 	memset(&sd->inventory, 0, sizeof(struct s_storage));
+ 	memset(&sd->cart, 0, sizeof(struct s_storage));
+@@ -6963,6 +6968,7 @@ enum e_setpos pc_setpos(map_session_data* sd, uint16 mapindex, int32 x, int32 y,
+ 	sd->state.item_enchant_index = 0;
+ 
+ 	if( sd->state.changemap ) { // Misc map-changing settings
++		skill_clear_animation(&sd->bl);
+ 		int32 curr_map_instance_id = map_getmapdata(sd->m)->instance_id, new_map_instance_id = (mapdata ? mapdata->instance_id : 0);
+ 
+ 		if (curr_map_instance_id != new_map_instance_id) {
+@@ -10773,6 +10779,9 @@ int32 pc_itemheal(map_session_data *sd, t_itemid itemid, int32 hp, int32 sp)
+ 			hp = 0;
+ 	}
+ 
++	if (sd->showrecovery)
++		return status_heal(sd, hp, sp, 2);
++
+ 	return status_heal(sd, hp, sp, 1);
+ }
+ 
+@@ -15479,7 +15488,7 @@ bool pc_job_can_entermap(enum e_job jobid, int32 m, int32 group_lv) {
+  * @param sd
+  **/
+ void pc_set_costume_view(map_session_data *sd) {
+-	int32 i = -1, head_low = 0, head_mid = 0, head_top = 0, robe = 0;
++	int32 i = -1, head_low = 0, head_mid = 0, head_top = 0, robe = 0, weapon = 0;
+ 	struct item_data *id = nullptr;
+ 
+ 	nullpo_retv(sd);
+@@ -15488,8 +15497,9 @@ void pc_set_costume_view(map_session_data *sd) {
+ 	head_mid = sd->status.head_mid;
+ 	head_top = sd->status.head_top;
+ 	robe = sd->status.robe;
++	weapon = sd->status.costume_weapon;
+ 
+-	sd->status.head_bottom = sd->status.head_mid = sd->status.head_top = sd->status.robe = 0;
++	sd->status.head_bottom = sd->status.head_mid = sd->status.head_top = sd->status.robe = sd->status.costume_weapon = 0;
+ 
+ 	//Added check to prevent sending the same look on multiple slots ->
+ 	//causes client to redraw item on top of itself. (suggested by Lupus)
+@@ -15510,6 +15520,8 @@ void pc_set_costume_view(map_session_data *sd) {
+ 		sd->status.head_top = id->look;
+ 	if ((i = sd->equip_index[EQI_GARMENT]) != -1 && (id = sd->inventory_data[i]))
+ 		sd->status.robe = id->look;
++	if ((i = sd->equip_index[EQI_HAND_R]) != -1 && (id = sd->inventory_data[i]))
++		sd->status.costume_weapon = id->look;
+ 
+ 	// Costumes check
+ 	if (!map_getmapflag(sd->m, MF_NOCOSTUME) && !sd->status.disable_showcostumes) {
+@@ -15529,6 +15541,8 @@ void pc_set_costume_view(map_session_data *sd) {
+ 			sd->status.head_top = id->look;
+ 		if ((i = sd->equip_index[EQI_COSTUME_GARMENT]) != -1 && (id = sd->inventory_data[i]))
+ 			sd->status.robe = id->look;
++		if ((i = sd->equip_index[EQI_SHADOW_WEAPON]) != -1 && (id = sd->inventory_data[i]))
++			sd->status.costume_weapon = id->look;
+ 	}
+ 
+ 	if (sd->setlook_head_bottom)
+@@ -15548,6 +15562,8 @@ void pc_set_costume_view(map_session_data *sd) {
+ 		clif_changelook(sd, LOOK_HEAD_TOP, sd->status.head_top);
+ 	if (robe != sd->status.robe)
+ 		clif_changelook(sd, LOOK_ROBE, sd->status.robe);
++	if (weapon != sd->status.costume_weapon)
++		clif_changelook(sd, LOOK_WEAPON, sd->status.costume_weapon > 0 ? sd->status.costume_weapon : sd->status.weapon);
+ }
+ 
+ std::shared_ptr<s_attendance_period> pc_attendance_period(){
+diff --git a/src/map/pc.hpp b/src/map/pc.hpp
+index 394fa84e49fe44ae0d1f272b03830b4a5fd60edd..130498e208eb0e5e713e90d668472ad9171c4af4 100644
+--- a/src/map/pc.hpp
++++ b/src/map/pc.hpp
+@@ -427,6 +427,7 @@ public:
+ 		uint16 autoloot;
+ 		t_itemid autolootid[AUTOLOOTITEM_SIZE]; // [Zephyrus]
+ 		uint16 autoloottype;
++		uint32 spb : 1; // @spb / @partybuff
+ 		uint32 autolooting : 1; //performance-saver, autolooting state for @alootid
+ 		uint32 gmaster_flag : 1;
+ 		uint32 prevend : 1;//used to flag wheather you've spent 40sp to open the vending or not.
+@@ -459,6 +460,7 @@ public:
+ 		bool roulette_open;
+ 		t_itemid item_reform;
+ 		uint64 item_enchant_index;
++		uint8 hidepet;
+ 	} state;
+ 	struct {
+ 		unsigned char no_weapon_damage, no_magic_damage, no_misc_damage;
+@@ -725,6 +727,7 @@ public:
+ 
+ 	bool party_creating; // whether the char is requesting party creation
+ 	bool party_joining; // whether the char is accepting party invitation
++	bool showrecovery;
+ 	int32 party_invite, party_invite_account; // for handling party invitation (holds party id and account id)
+ 	int32 adopt_invite; // Adoption
+ 
+@@ -937,6 +940,11 @@ public:
+ 		int32 target;
+ 	} skill_keep_using;
+ 
++	struct {
++		int32 tid;
++		uint8 step;
++	} skill_animation;
++
+ 	struct {
+ 		std::shared_ptr<s_captcha_data> cd;
+ 		uint16 upload_size;

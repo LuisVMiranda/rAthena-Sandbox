@@ -1,0 +1,17 @@
+// Campfire system (Matchstick 7035)
+feature.campfire_nonvip_duration: 60
+feature.campfire_vip_duration: 120
+feature.campfire_tick_interval: 10
+feature.campfire_range: 9
+feature.campfire_heal_mode: 0
+feature.campfire_hp_percent: 3
+feature.campfire_sp_percent: 3
+feature.campfire_hp_fixed: 100
+feature.campfire_sp_fixed: 50
+feature.campfire_cooldown: 30
+feature.campfire_icon: 992
+feature.campfire_ground_skill: 653
+feature.campfire_ground_skill_lv: 1
+feature.campfire_ground_effect: 313
+feature.campfire_language: 1
+feature.no_mercy_recover_rate: 20

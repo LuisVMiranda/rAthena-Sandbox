@@ -1,0 +1,2 @@
+// Enable Campfire template NPC for runtime duplication.
+npc: npc/custom/campfire_system.txt

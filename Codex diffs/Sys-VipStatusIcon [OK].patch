@@ -1,0 +1,20 @@
+diff --git a/diffs/Sys-VipStatusIcon/0001-System-Vip-Status-Icon.patch b/diffs/Sys-VipStatusIcon [OK]/0001-System-Vip-Status-Icon.patch
+similarity index 100%
+rename from diffs/Sys-VipStatusIcon/0001-System-Vip-Status-Icon.patch
+rename to diffs/Sys-VipStatusIcon [OK]/0001-System-Vip-Status-Icon.patch
+diff --git a/diffs/Sys-VipStatusIcon/data/luafiles514/lua files/stateicon/efstids.lub b/diffs/Sys-VipStatusIcon [OK]/data/luafiles514/lua files/stateicon/efstids.lub
+similarity index 100%
+rename from diffs/Sys-VipStatusIcon/data/luafiles514/lua files/stateicon/efstids.lub
+rename to diffs/Sys-VipStatusIcon [OK]/data/luafiles514/lua files/stateicon/efstids.lub
+diff --git a/diffs/Sys-VipStatusIcon/data/luafiles514/lua files/stateicon/stateiconimginfo.lub b/diffs/Sys-VipStatusIcon [OK]/data/luafiles514/lua files/stateicon/stateiconimginfo.lub
+similarity index 100%
+rename from diffs/Sys-VipStatusIcon/data/luafiles514/lua files/stateicon/stateiconimginfo.lub
+rename to diffs/Sys-VipStatusIcon [OK]/data/luafiles514/lua files/stateicon/stateiconimginfo.lub
+diff --git a/diffs/Sys-VipStatusIcon/data/luafiles514/lua files/stateicon/stateiconinfo.lub b/diffs/Sys-VipStatusIcon [OK]/data/luafiles514/lua files/stateicon/stateiconinfo.lub
+similarity index 100%
+rename from diffs/Sys-VipStatusIcon/data/luafiles514/lua files/stateicon/stateiconinfo.lub
+rename to diffs/Sys-VipStatusIcon [OK]/data/luafiles514/lua files/stateicon/stateiconinfo.lub
+diff --git a/diffs/Sys-VipStatusIcon/data/texture/effect/vipstate.tga b/diffs/Sys-VipStatusIcon [OK]/data/texture/effect/vipstate.tga
+similarity index 100%
+rename from diffs/Sys-VipStatusIcon/data/texture/effect/vipstate.tga
+rename to diffs/Sys-VipStatusIcon [OK]/data/texture/effect/vipstate.tga

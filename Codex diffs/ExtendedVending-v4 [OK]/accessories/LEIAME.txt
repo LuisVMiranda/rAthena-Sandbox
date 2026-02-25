@@ -1,0 +1,3 @@
+Ateno, no substitua os arquivos!
+Antes verifique se o arquivo  existente no seu emulador, caso seja, apenas coloque o contedo dentro.
+

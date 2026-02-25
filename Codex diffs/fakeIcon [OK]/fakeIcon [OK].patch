@@ -1,0 +1,102 @@
+diff --git a/src/map/script.cpp b/src/map/script.cpp
+index 6ab5524d301a9fa6a7a499590ec23134422c98bb..9801b37a63bd2c5691a8d358523e0c41b1d35760 100644
+--- a/src/map/script.cpp
++++ b/src/map/script.cpp
+@@ -13387,6 +13387,25 @@ static int32 buildin_addrid_sub(block_list *bl,va_list ap)
+ 	return 0;
+ }
+ 
++/*
++* fakeIcon
++* fakeIcon(CHAR_ID,ICON_ID,TIME,STATE)
++*/
++BUILDIN_FUNC(fakeIcon)
++{
++	TBL_PC* sd = map_charid2sd(script_getnum(st, 2));
++	int32 icon = script_getnum(st, 3);
++	int32 time = script_getnum(st, 4);
++	bool state = (script_getnum(st, 5) == 1);
++
++	if (sd == nullptr)
++		return SCRIPT_CMD_FAILURE;
++
++	clif_status_change(sd, static_cast<sc_type>(icon), state, static_cast<t_tick>(time), 0, 0, 0);
++
++	return SCRIPT_CMD_SUCCESS;
++}
++
+ BUILDIN_FUNC(addrid)
+ {
+ 	struct s_mapiterator* iter;
+@@ -21562,6 +21581,53 @@ BUILDIN_FUNC(bg_get_data)
+  * Reserves a slot for the given Battleground.
+  * bg_reserve("<battleground_map_name>"{,<ended>});
+  */
++
++BUILDIN_FUNC(bg_queue_join)
++{
++	const char* name = script_getstr(st, 2);
++	int32 queue_type = script_getnum(st, 3);
++	TBL_PC* sd = nullptr;
++
++	if (!script_charid2sd(4, sd) || sd == nullptr) {
++		script_pushint(st, 0);
++		return SCRIPT_CMD_SUCCESS;
++	}
++
++	switch (queue_type) {
++		case 1: bg_queue_join_party(name, sd); break;
++		case 2: bg_queue_join_guild(name, sd); break;
++		default: bg_queue_join_solo(name, sd); break;
++	}
++
++	script_pushint(st, 1);
++	return SCRIPT_CMD_SUCCESS;
++}
++
++BUILDIN_FUNC(getcharqueue)
++{
++	TBL_PC* sd = nullptr;
++	if (!script_charid2sd(2, sd) || sd == nullptr) {
++		script_pushint(st, -1);
++		return SCRIPT_CMD_SUCCESS;
++	}
++
++	script_pushint(st, sd->bg_queue_id);
++	return SCRIPT_CMD_SUCCESS;
++}
++
++BUILDIN_FUNC(viewpointmap2) {
++	const char* map = script_getstr(st, 2);
++	int16 mapid = map_mapname2mapid(map);
++
++	if (mapid < 0) {
++		ShowError("buildin_viewpointmap2: Unknown map name %s.\n", map);
++		return SCRIPT_CMD_FAILURE;
++	}
++
++	map_foreachinmap(buildin_viewpointmap_sub, mapid, BL_PC, st->oid, script_getnum(st, 3), script_getnum(st, 4), script_getnum(st, 5), script_getnum(st, 6), script_getnum(st, 7));
++	return SCRIPT_CMD_SUCCESS;
++}
++
+ BUILDIN_FUNC(bg_reserve)
+ {
+ 	const char *str = script_getstr(st, 2);
+@@ -27855,6 +27921,7 @@ struct script_function buildin_func[] = {
+ 	BUILDIN_DEF(select,"s*"), //for future jA script compatibility
+ 	BUILDIN_DEF(prompt,"s*"),
+ 	//
++	BUILDIN_DEF(fakeIcon,"iiii"),
+ 	BUILDIN_DEF(goto,"l"),
+ 	BUILDIN_DEF(callsub,"l*"),
+ 	BUILDIN_DEF(callfunc,"s*"),
+@@ -28333,6 +28400,9 @@ struct script_function buildin_func[] = {
+ 	BUILDIN_DEF(bg_reserve,"s?"),
+ 	BUILDIN_DEF(bg_unbook,"s"),
+ 	BUILDIN_DEF(bg_info,"si"),
++	BUILDIN_DEF(bg_queue_join,"sii"),
++	BUILDIN_DEF(getcharqueue,"i"),
++	BUILDIN_DEF(viewpointmap2,"siiiii"),
+ 
+ 	// Instancing
+ 	BUILDIN_DEF(instance_create,"s??"),

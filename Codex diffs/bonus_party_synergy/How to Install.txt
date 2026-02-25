@@ -1,0 +1,24 @@
+Party Synergy (bPartySynergy) - How to Install
+=============================================
+
+1) Apply code changes
+   - Apply `bonus_party_synergy.diff` from this folder to your source tree.
+
+2) Rebuild map-server
+   - Run your normal build steps for rAthena.
+
+3) Use the new bonus in scripts/items
+   - Bonus name: bPartySynergy
+   - Syntax: bonus bPartySynergy,<value>;
+   - Recommended value: 1
+
+Behavior
+--------
+- Counts unique base class lines from party members on the same map.
+- Every 4 unique classes grants +1 to all basic stats (STR/AGI/VIT/INT/DEX/LUK).
+- Maximum synergy stacks: 4 (up to +4 all stats when value is 1).
+- Recalculates when party membership/map state changes.
+
+Example
+-------
+bonus bPartySynergy,1;

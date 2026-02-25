@@ -1,0 +1,133 @@
+
+diff --git a/src/common/mmo.hpp b/src/common/mmo.hpp
+index 907c5e3b2..a72780db3 100644
+--- a/src/common/mmo.hpp
++++ b/src/common/mmo.hpp
+@@ -518,7 +518,7 @@ struct mmo_charstatus {
+ 	int spear_faith, spear_calls;
+ 	int sword_faith, sword_calls;
+ 
+-	short weapon; // enum weapon_type
++	short weapon, costume_weapon; // enum weapon_type
+ 	short shield; // view-id
+ 	short head_top,head_mid,head_bottom;
+ 	short robe;
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index 12a7b9da1..6618ea757 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -973,38 +973,50 @@ void clif_clearunit_delayed(struct block_list* bl, clr_type type, t_tick tick)
+ 	add_timer(tick, clif_clearunit_delayed_sub, (int)type, (intptr_t)tbl);
+ }
+ 
+-void clif_get_weapon_view(map_session_data* sd, t_itemid *rhand, t_itemid *lhand)
+-{
+-	if(sd->sc.option&OPTION_COSTUME)
+-	{
++void clif_get_weapon_view(map_session_data* sd, t_itemid *rhand, t_itemid *lhand){
++	int c_weapon = 0;
++	if(sd->sc.option&OPTION_COSTUME){
+ 		*rhand = *lhand = 0;
+ 		return;
+-	}
++	}	
+ 
+ #if PACKETVER < 4
+ 	*rhand = sd->status.weapon;
+ 	*lhand = sd->status.shield;
+ #else
+-	if (sd->equip_index[EQI_HAND_R] >= 0 &&
+-		sd->inventory_data[sd->equip_index[EQI_HAND_R]])
+-	{
+-		struct item_data* id = sd->inventory_data[sd->equip_index[EQI_HAND_R]];
++	if (sd->equip_index[EQI_SHADOW_WEAPON] >= 0 &&
++		sd->inventory_data[sd->equip_index[EQI_SHADOW_WEAPON]]){
++		struct item_data* id = sd->inventory_data[sd->equip_index[EQI_SHADOW_WEAPON]];
+ 		if (id->view_id > 0)
+ 			*rhand = id->view_id;
+ 		else
+ 			*rhand = id->nameid;
++		c_weapon = 1;
+ 	} else
+ 		*rhand = 0;
+ 
++	if (*rhand == 0){
++		if (sd->equip_index[EQI_HAND_R] >= 0 &&
++			sd->inventory_data[sd->equip_index[EQI_HAND_R]]){
++			struct item_data* id = sd->inventory_data[sd->equip_index[EQI_HAND_R]];
++			*rhand = id->nameid;
++		} else
++			*rhand = 0;
++	}
++
+ 	if (sd->equip_index[EQI_HAND_L] >= 0 &&
+ 		sd->equip_index[EQI_HAND_L] != sd->equip_index[EQI_HAND_R] &&
+ 		sd->inventory_data[sd->equip_index[EQI_HAND_L]])
+ 	{
+ 		struct item_data* id = sd->inventory_data[sd->equip_index[EQI_HAND_L]];
+-		if (id->view_id > 0)
+-			*lhand = id->view_id;
+-		else
+-			*lhand = id->nameid;
++		if (c_weapon && id->type == IT_WEAPON)
++			*lhand = 0;
++		else {
++			if (id->view_id > 0)
++				*lhand = id->view_id;
++			else
++				*lhand = id->nameid;
++		}
+ 	} else
+ 		*lhand = 0;
+ #endif
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index 72029fdd7..6905fb5dd 100755
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -13422,7 +13422,7 @@ bool pc_job_can_entermap(enum e_job jobid, int m, int group_lv) {
+  * @param sd
+  **/
+ void pc_set_costume_view(struct map_session_data *sd) {
+-	int i = -1, head_low = 0, head_mid = 0, head_top = 0, robe = 0;
++	int i = -1, head_low = 0, head_mid = 0, head_top = 0, robe = 0, weapon = 0;
+ 	struct item_data *id = NULL;
+ 
+ 	nullpo_retv(sd);
+@@ -13431,8 +13431,9 @@ void pc_set_costume_view(struct map_session_data *sd) {
+ 	head_mid = sd->status.head_mid;
+ 	head_top = sd->status.head_top;
+ 	robe = sd->status.robe;
++	weapon = sd->status.costume_weapon;
+ 
+-	sd->status.head_bottom = sd->status.head_mid = sd->status.head_top = sd->status.robe = 0;
++	sd->status.head_bottom = sd->status.head_mid = sd->status.head_top = sd->status.robe = sd->status.costume_weapon = 0;
+ 
+ 	//Added check to prevent sending the same look on multiple slots ->
+ 	//causes client to redraw item on top of itself. (suggested by Lupus)
+@@ -13453,6 +13454,8 @@ void pc_set_costume_view(struct map_session_data *sd) {
+ 		sd->status.head_top = id->look;
+ 	if ((i = sd->equip_index[EQI_GARMENT]) != -1 && (id = sd->inventory_data[i]))
+ 		sd->status.robe = id->look;
++	if ((i = sd->equip_index[EQI_HAND_R]) != -1 && (id = sd->inventory_data[i]))
++		sd->status.costume_weapon = id->look;			
+ 
+ 	// Costumes check
+ 	if (!map_getmapflag(sd->bl.m, MF_NOCOSTUME)) {
+@@ -13472,6 +13475,8 @@ void pc_set_costume_view(struct map_session_data *sd) {
+ 			sd->status.head_top = id->look;
+ 		if ((i = sd->equip_index[EQI_COSTUME_GARMENT]) != -1 && (id = sd->inventory_data[i]))
+ 			sd->status.robe = id->look;
++		if ((i = sd->equip_index[EQI_SHADOW_WEAPON]) != -1 && (id = sd->inventory_data[i]))
++			sd->status.costume_weapon = id->look;			
+ 	}
+ 
+ 	if (sd->setlook_head_bottom)
+@@ -13491,6 +13496,8 @@ void pc_set_costume_view(struct map_session_data *sd) {
+ 		clif_changelook(&sd->bl, LOOK_HEAD_TOP, sd->status.head_top);
+ 	if (robe != sd->status.robe)
+ 		clif_changelook(&sd->bl, LOOK_ROBE, sd->status.robe);
++	if (weapon != sd->status.costume_weapon)
++		clif_changelook(&sd->bl, LOOK_WEAPON, sd->status.weapon);
+ }
+ 
+ std::shared_ptr<s_attendance_period> pc_attendance_period(){

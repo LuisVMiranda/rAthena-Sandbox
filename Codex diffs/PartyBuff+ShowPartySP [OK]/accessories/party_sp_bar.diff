@@ -1,0 +1,178 @@
+diff --git a/src/custom/atcommand.inc b/src/custom/atcommand.inc
+index 9dd4a3856..995f498d6 100644
+--- a/src/custom/atcommand.inc
++++ b/src/custom/atcommand.inc
+@@ -17,3 +17,21 @@
+ //	clif_specialeffect(&sd->bl, EF_HEARTCASTING, AREA);
+ //	return 0;
+ //}
++
++ACMD_FUNC(spbar)
++{
++	nullpo_retr(-1, sd);
++	battle_config.party_sp_on = 1 - battle_config.party_sp_on;
++
++	struct map_session_data* iter_sd;
++	struct s_mapiterator* iter;
++
++	iter = mapit_getallusers();
++	for (iter_sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); iter_sd = (TBL_PC*)mapit_next(iter))
++	{
++		clif_refresh(iter_sd);
++	}
++	mapit_free(iter);
++
++	return 0;
++}
+diff --git a/src/custom/atcommand_def.inc b/src/custom/atcommand_def.inc
+index 54d9e74ba..467223040 100644
+--- a/src/custom/atcommand_def.inc
++++ b/src/custom/atcommand_def.inc
+@@ -9,3 +9,5 @@
+  **/
+ 
+ //ACMD_DEF(newcommand),
++
++ACMD_DEF(spbar),
+diff --git a/src/custom/battle_config_init.inc b/src/custom/battle_config_init.inc
+index e47aca9be..4d569b9d8 100644
+--- a/src/custom/battle_config_init.inc
++++ b/src/custom/battle_config_init.inc
+@@ -11,3 +11,4 @@
+  *	 { "name", &battle_config.<variable name>, <default value>, <minimum value>, <maximum value> },
+  **/
+ 
++ {"party_sp_on", &battle_config.party_sp_on, 1, 0, 1},
+diff --git a/src/custom/battle_config_struct.inc b/src/custom/battle_config_struct.inc
+index 017d99d07..fa0c83459 100644
+--- a/src/custom/battle_config_struct.inc
++++ b/src/custom/battle_config_struct.inc
+@@ -12,3 +12,4 @@
+  *	 <datatype> name;
+  **/
+ 
++ int party_sp_on;
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index ec43e5827..8d8e04cdb 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -3246,6 +3246,8 @@ static int clif_hpmeter_sub(struct block_list *bl, va_list ap)
+ #else
+ 	WFIFOL(tsd->fd,6) = sd->battle_status.hp;
+ 	WFIFOL(tsd->fd,10) = sd->battle_status.max_hp;
++	WFIFOL(tsd->fd,14) = 0;
++	WFIFOL(tsd->fd,18) = 0;
+ #endif
+ 	WFIFOSET(tsd->fd,packet_len(cmd));
+ 	return 0;
+@@ -3524,7 +3526,11 @@ void clif_updatestatus(struct map_session_data *sd,int type)
+ 				}
+ 			}
+ 			break;
++
+ 		case SP_HP:
++		case SP_SP:
++		case SP_MAXHP:
++		case SP_MAXSP:
+ 			if( map_getmapdata(sd->bl.m)->hpmeter_visible ){
+ 				clif_hpmeter(sd);
+ 			}
+@@ -4711,11 +4717,20 @@ static void clif_getareachar_pc(struct map_session_data* sd,struct map_session_d
+ 		clif_spiritcharm_single(sd->fd, dstsd);
+ 	if (dstsd->soulball > 0)
+ 		clif_soulball( dstsd, &sd->bl, SELF );
+-	if( (sd->status.party_id && dstsd->status.party_id == sd->status.party_id) || //Party-mate, or hpdisp setting.
++
++	bool is_party_member = sd->status.party_id && dstsd->status.party_id == sd->status.party_id;
++	if (is_party_member ||                          //Party-mate, or hpdisp setting.
+ 		(sd->bg_id && sd->bg_id == dstsd->bg_id) || //BattleGround
+ 		pc_has_permission(sd, PC_PERM_VIEW_HPMETER)
+-	)
+-	clif_hpmeter_single(sd->fd, dstsd->bl.id, dstsd->battle_status.hp, dstsd->battle_status.max_hp);
++		)
++	{
++		clif_hpmeter_single(sd->fd, dstsd->bl.id,
++			dstsd->battle_status.hp,
++			dstsd->battle_status.max_hp,
++			is_party_member ? dstsd->battle_status.sp : 0,
++			is_party_member ? dstsd->battle_status.max_sp : 0
++		);
++	}
+ 
+ 	// display link (sd - dstsd) to sd
+ 	ARR_FIND( 0, MAX_DEVOTION, i, sd->devotion[i] == dstsd->bl.id );
+@@ -7896,7 +7911,7 @@ void clif_party_xy_single(int fd, struct map_session_data *sd)
+ /// 080e <account id>.L <hp>.L <max hp>.L (ZC_NOTIFY_HP_TO_GROUPM_R2)
+ void clif_party_hp(struct map_session_data *sd)
+ {
+-	unsigned char buf[16];
++	unsigned char buf[24];
+ #if PACKETVER < 20100126
+ 	const int cmd = 0x106;
+ #else
+@@ -7918,6 +7933,8 @@ void clif_party_hp(struct map_session_data *sd)
+ #else
+ 	WBUFL(buf,6) = sd->battle_status.hp;
+ 	WBUFL(buf,10) = sd->battle_status.max_hp;
++	WBUFL(buf,14) = battle_config.party_sp_on ? sd->battle_status.sp : 0;
++	WBUFL(buf,18) = battle_config.party_sp_on ? sd->battle_status.max_sp : 0;
+ #endif
+ 	clif_send(buf,packet_len(cmd),&sd->bl,PARTY_AREA_WOS);
+ }
+@@ -7958,7 +7975,7 @@ void clif_party_job_and_level(struct map_session_data *sd){
+ /*==========================================
+  * Sends HP bar to a single fd. [Skotlex]
+  *------------------------------------------*/
+-void clif_hpmeter_single(int fd, int id, unsigned int hp, unsigned int maxhp)
++void clif_hpmeter_single(int fd, int id, unsigned int hp, unsigned int maxhp, unsigned int sp, unsigned int maxsp)
+ {
+ #if PACKETVER < 20100126
+ 	const int cmd = 0x106;
+@@ -7980,6 +7997,8 @@ void clif_hpmeter_single(int fd, int id, unsigned int hp, unsigned int maxhp)
+ #else
+ 	WFIFOL(fd,6) = hp;
+ 	WFIFOL(fd,10) = maxhp;
++	WFIFOL(fd,14) = battle_config.party_sp_on ? sp : 0;
++	WFIFOL(fd,18) = battle_config.party_sp_on ? maxsp : 0;
+ #endif
+ 	WFIFOSET(fd, packet_len(cmd));
+ }
+diff --git a/src/map/clif.hpp b/src/map/clif.hpp
+index 8425fdd47..d9fe08471 100644
+--- a/src/map/clif.hpp
++++ b/src/map/clif.hpp
+@@ -792,7 +792,7 @@ void clif_party_message(struct party_data* p, uint32 account_id, const char* mes
+ void clif_party_xy(struct map_session_data *sd);
+ void clif_party_xy_single(int fd, struct map_session_data *sd);
+ void clif_party_hp(struct map_session_data *sd);
+-void clif_hpmeter_single(int fd, int id, unsigned int hp, unsigned int maxhp);
++void clif_hpmeter_single(int fd, int id, unsigned int hp, unsigned int maxhp, unsigned int sp = 0, unsigned int maxsp = 0);
+ void clif_party_job_and_level(struct map_session_data *sd);
+ void clif_party_dead( struct map_session_data *sd );
+ 
+diff --git a/src/map/clif_packetdb.hpp b/src/map/clif_packetdb.hpp
+index d8d744199..e4a17595e 100644
+--- a/src/map/clif_packetdb.hpp
++++ b/src/map/clif_packetdb.hpp
+@@ -1647,7 +1647,7 @@
+ #if PACKETVER >= 20100126
+ 	//packet(0x080C,2);
+ 	//packet(0x080D,3);
+-	packet(0x080E,14);
++	packet(0x080E,22);
+ #endif
+ 
+ // 2010-02-09aRagexeRE
+diff --git a/src/map/party.cpp b/src/map/party.cpp
+index f9e70b131..e78fe4f36 100644
+--- a/src/map/party.cpp
++++ b/src/map/party.cpp
+@@ -555,7 +555,7 @@ int party_member_added(int party_id,uint32 account_id,uint32 char_id, int flag)
+ 		sd2 = p->data[i].sd;
+ 
+ 		if( sd2 && sd2->status.account_id != account_id && sd2->status.char_id != char_id )
+-			clif_hpmeter_single(sd->fd, sd2->bl.id, sd2->battle_status.hp, sd2->battle_status.max_hp);
++			clif_hpmeter_single(sd->fd, sd2->bl.id, sd2->battle_status.hp, sd2->battle_status.max_hp, sd2->battle_status.sp, sd2->battle_status.max_sp);
+ 	}
+ 
+ 	clif_party_hp(sd);

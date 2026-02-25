@@ -1,0 +1,65 @@
+diff --git a/conf/msg_conf/map_msg.conf b/conf/msg_conf/map_msg.conf
+index adf1cf4..278595e 100644
+--- a/conf/msg_conf/map_msg.conf
++++ b/conf/msg_conf/map_msg.conf
+@@ -467,6 +467,7 @@
+ 450: You already have a homunculus
+ 
+ 451: Cash Shop is disabled on this map.
++452: Token of Siegfried is forbidden on this map.
+ 
+ // Message System
+ 460: Please enter a valid language (usage: @langtype <language>).
+diff --git a/src/map/atcommand.cpp b/src/map/atcommand.cpp
+index 30d14f7..881b5e5 100644
+--- a/src/map/atcommand.cpp
++++ b/src/map/atcommand.cpp
+@@ -4914,6 +4914,8 @@ ACMD_FUNC(mapinfo) {
+ 		strcat(atcmd_output, " NoTomb |");
+ 	if (map_getmapflag(m_id, MF_NOCOSTUME))
+ 		strcat(atcmd_output, " NoCostume |");
++	if (map_getmapflag(m_id, MF_NORESS))
++		strcat(atcmd_output, " NoRess |");
+ 	if (map_getmapflag(m_id, MF_NOBANK))
+ 		strcat(atcmd_output, " NoBank |");
+ 	if (map_getmapflag(m_id, MF_NOCASHSHOP))
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index d3f4c71..998a1d2 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -15777,6 +15777,11 @@ void clif_parse_HomMenu(int32 fd, map_session_data *sd)
+ /// 0292
+ void clif_parse_AutoRevive(int32 fd, map_session_data *sd)
+ {
++	if (map_getmapflag(sd->bl.m, MF_NORESS)) {
++		clif_displaymessage(sd->fd, msg_txt(sd, 452));
++		return;
++	}
++
+ 	pc_revive_item(sd);
+ }
+ 
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index d32f752..ec2e5aa 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -684,6 +684,7 @@ enum e_mapflag : int16 {
+ 	MF_PRIVATEAIRSHIP_SOURCE,
+ 	MF_PRIVATEAIRSHIP_DESTINATION,
+ 	MF_SKILL_DURATION,
++	MF_NORESS,
+ 	MF_NOCASHSHOP, // 70
+ 	MF_NORODEX,
+ 	MF_NORENEWALEXPPENALTY,
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index b2d500d..d73451c 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -525,6 +525,7 @@
+ 	export_constant(MF_PRIVATEAIRSHIP_SOURCE);
+ 	export_constant(MF_PRIVATEAIRSHIP_DESTINATION);
+ 	export_constant(MF_SKILL_DURATION);
++	export_constant(MF_NORESS);
+ 	export_constant(MF_NOCASHSHOP);
+ 	export_constant(MF_NORODEX);
+ 	export_constant(MF_NORENEWALDROPPENALTY);

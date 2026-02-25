@@ -1,0 +1,210 @@
+ src/map/atcommand.cpp | 26 ++++++++++++++++++++++++++
+ src/map/clif.cpp      | 33 +++++++++++++++++++++++++++++++--
+ src/map/clif.hpp      |  1 +
+ src/map/party.cpp     |  4 ++++
+ src/map/pc.hpp        |  1 +
+ src/map/status.cpp    | 16 ++++++++++++++++
+ 6 files changed, 79 insertions(+), 2 deletions(-)
+
+diff --git a/src/map/atcommand.cpp b/src/map/atcommand.cpp
+index 8d4e5a9..0f33b6a 100644
+--- a/src/map/atcommand.cpp
++++ b/src/map/atcommand.cpp
+@@ -10050,6 +10050,30 @@ ACMD_FUNC(limitedsale){
+ 	return 0;
+ }
+ 
++ACMD_FUNC(partybuff)
++{ // [Vykimo]
++	struct party_data* p = NULL;
++	nullpo_retr(-1, sd);
++
++	if( !sd->status.party_id ) {
++		clif_displaymessage(fd, msg_txt(sd,1071)); // You're not in a party.
++		return -1;
++	}
++
++	p = party_search(sd->status.party_id);
++
++	if( sd->state.spb ) {
++		sd->state.spb = 0;
++		clif_displaymessage(fd, msg_txt(sd,1072)); // Displaying party member's buffs disabled.
++	} else {
++		sd->state.spb = 1;
++		clif_displaymessage(fd, msg_txt(sd,1073)); // Displaying party member's buffs enabled.
++	}
++
++	clif_party_info(p,sd);
++	return 0;
++}
++
+ #include "../custom/atcommand.inc"
+ 
+ /**
+@@ -10068,6 +10092,8 @@ void atcommand_basecommands(void) {
+ 	AtCommandInfo atcommand_base[] = {
+ #include "../custom/atcommand_def.inc"
+ 		ACMD_DEF2R("warp", mapmove, ATCMD_NOCONSOLE),
++		ACMD_DEF(partybuff), // [Vykimo]
++		ACMD_DEF2("spb", partybuff), // [Vykimo]
+ 		ACMD_DEF(where),
+ 		ACMD_DEF(jumpto),
+ 		ACMD_DEF(jump),
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index f3c3bca..7e459ea 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -463,6 +463,7 @@ int clif_send(const uint8* buf, int len, struct block_list* bl, enum send_target
+ 	case PARTY_WOS:
+ 	case PARTY_SAMEMAP:
+ 	case PARTY_SAMEMAP_WOS:
++	case PARTY_BUFF_INFO:
+ 		if (sd && sd->status.party_id)
+ 			p = party_search(sd->status.party_id);
+ 
+@@ -477,12 +478,15 @@ int clif_send(const uint8* buf, int len, struct block_list* bl, enum send_target
+ 				if( sd->bl.id == bl->id && (type == PARTY_WOS || type == PARTY_SAMEMAP_WOS || type == PARTY_AREA_WOS) )
+ 					continue;
+ 
+-				if( type != PARTY && type != PARTY_WOS && bl->m != sd->bl.m )
++				if( type != PARTY_BUFF_INFO && type != PARTY && type != PARTY_WOS && bl->m != sd->bl.m )
+ 					continue;
+ 
+ 				if( (type == PARTY_AREA || type == PARTY_AREA_WOS) && (sd->bl.x < x0 || sd->bl.y < y0 || sd->bl.x > x1 || sd->bl.y > y1) )
+ 					continue;
+ 
++				if( type == PARTY_BUFF_INFO && !sd->state.spb )
++					continue;
++
+ 				WFIFOHEAD(fd, len);
+ 				memcpy(WFIFOP(fd, 0), buf, len);
+ 				WFIFOSET(fd, len);
+@@ -7421,8 +7425,9 @@ void clif_party_member_info(struct party_data *p, struct map_session_data *sd)
+ /// 0a44 <packet len>.W <party name>.24B { <account id>.L <nick>.24B <map name>.16B <role>.B <state>.B <class>.W <base level>.W }* <item pickup rule>.B <item share rule>.B <unknown>.L
+ void clif_party_info(struct party_data* p, struct map_session_data *sd)
+ {
+-	struct map_session_data* party_sd = NULL;
++	struct map_session_data* party_sd = NULL, *target = NULL;
+ 	int i, c;
++	char output[NAME_LENGTH+10];
+ #if PACKETVER < 20170502
+ 	const int M_SIZE = 46; // 4+NAME_LENGTH+MAP_NAME_LENGTH_EXT+1+1
+ 	unsigned char buf[2+2+NAME_LENGTH+46*MAX_PARTY];
+@@ -7470,6 +7475,30 @@ void clif_party_info(struct party_data* p, struct map_session_data *sd)
+ 	} else if (party_sd) { // send to whole party
+ 		clif_send(buf, WBUFW(buf,2), &party_sd->bl, PARTY);
+ 	}
++	for(i = 0, c = 0; i < MAX_PARTY; i++)
++	{
++		if( (target = p->data[i].sd) ) {
++			strcpy(output, "[");
++			if( target->sc.data[SC_BLESSING] ) strcat(output,"B");
++				else strcat(output,"_");
++			if( target->sc.data[SC_INCREASEAGI] ) strcat(output,"A");
++				else strcat(output,"_");
++			if( target->sc.data[SC_CP_WEAPON] && target->sc.data[SC_CP_SHIELD] && target->sc.data[SC_CP_ARMOR] && target->sc.data[SC_CP_HELM] ) strcat(output,"F");
++				else strcat(output,"_");
++			if( target->sc.data[SC_SPIRIT] ) strcat(output,"S");
++				else strcat(output,"_");
++			if( target->sc.data[SC_DEVOTION] ) strcat(output,"+");
++				else strcat(output,"_");
++			strcat(output, "]");
++			strncat(output, target->status.name, NAME_LENGTH);
++			safestrncpy(WBUFCP(buf,PRE_SIZE+i*M_SIZE+4), output, NAME_LENGTH);
++		}
++	}
++	
++	if( sd && sd->state.spb )
++		clif_send(buf, WBUFW(buf,2), &sd->bl, SELF);
++	else if( party_sd )
++		clif_send(buf, WBUFW(buf,2), &party_sd->bl, PARTY_BUFF_INFO);
+ }
+ 
+ 
+diff --git a/src/map/clif.hpp b/src/map/clif.hpp
+index ba11700..7c0c866 100644
+--- a/src/map/clif.hpp
++++ b/src/map/clif.hpp
+@@ -195,6 +195,7 @@ enum send_target : uint8_t {
+ 	PARTY_SAMEMAP_WOS,
+ 	PARTY_AREA,
+ 	PARTY_AREA_WOS,
++	PARTY_BUFF_INFO,
+ 	GUILD,
+ 	GUILD_WOS,
+ 	GUILD_SAMEMAP,
+diff --git a/src/map/party.cpp b/src/map/party.cpp
+index 8d3f384..7969f31 100644
+--- a/src/map/party.cpp
++++ b/src/map/party.cpp
+@@ -671,6 +671,10 @@ int party_member_withdraw(int party_id, uint32 account_id, uint32 char_id, char
+ #endif
+ 
+ 		sd->status.party_id = 0;
++		if( sd->state.spb ) {
++			sd->state.spb = 0;
++			clif_displaymessage(sd->fd, msg_txt(sd,1072));
++		}
+ 		clif_name_area(&sd->bl); //Update name display [Skotlex]
+ 		//TODO: hp bars should be cleared too
+ 
+diff --git a/src/map/pc.hpp b/src/map/pc.hpp
+index e2609b5..d770fb8 100644
+--- a/src/map/pc.hpp
++++ b/src/map/pc.hpp
+@@ -261,6 +261,7 @@ struct map_session_data {
+ 		unsigned short autoloot;
+ 		unsigned short autolootid[AUTOLOOTITEM_SIZE]; // [Zephyrus]
+ 		unsigned short autoloottype;
++		unsigned int spb : 1; // @spb / @partybuff
+ 		unsigned int autolooting : 1; //performance-saver, autolooting state for @alootid
+ 		unsigned int autobonus; //flag to indicate if an autobonus is activated. [Inkfish]
+ 		unsigned int gmaster_flag : 1;
+diff --git a/src/map/status.cpp b/src/map/status.cpp
+index 148bf77..047e113 100644
+--- a/src/map/status.cpp
++++ b/src/map/status.cpp
+@@ -30,6 +30,7 @@
+ #include "mercenary.hpp"
+ #include "mob.hpp"
+ #include "npc.hpp"
++#include "party.hpp"
+ #include "path.hpp"
+ #include "pc.hpp"
+ #include "pc_groups.hpp"
+@@ -11741,6 +11742,14 @@ int status_change_start(struct block_list* src, struct block_list* bl,enum sc_ty
+ 	if( opt_flag&2 && sd && sd->touching_id )
+ 		npc_touchnext_areanpc(sd,false); // Run OnTouch_ on next char in range
+ 
++	if( sd && sd->status.party_id && (
++		type == SC_BLESSING || type == SC_INCREASEAGI || type == SC_CP_WEAPON || type == SC_CP_SHIELD ||
++		type == SC_CP_ARMOR || type == SC_CP_HELM || type == SC_SPIRIT || type == SC_DEVOTION )
++		) {
++		struct party_data *p = party_search(sd->status.party_id);
++		clif_party_info(p, NULL);
++	}
++	
+ 	return 1;
+ }
+ 
+@@ -12723,6 +12732,13 @@ int status_change_end_(struct block_list* bl, enum sc_type type, int tid, const
+ 	if(opt_flag&2 && sd && map_getcell(bl->m,bl->x,bl->y,CELL_CHKNPC))
+ 		npc_touch_areanpc(sd,bl->m,bl->x,bl->y); // Trigger on-touch event.
+ 
++	if( sd && sd->status.party_id && (
++		type == SC_BLESSING || type == SC_INCREASEAGI || type == SC_CP_WEAPON || type == SC_CP_SHIELD ||
++		type == SC_CP_ARMOR || type == SC_CP_HELM || type == SC_SPIRIT || type == SC_DEVOTION )
++		) {
++		struct party_data *p = party_search(sd->status.party_id);
++		clif_party_info(p, NULL);
++	}
+ 	ers_free(sc_data_ers, sce);
+ 	return 1;
+ }
+
+
+//ADDITIONAL map_msg.conf
+// ----- @partybuff / @spb ----- //
+1071: You're not in a party.
+1072: Displaying party member's buffs disabled.
+1073: Displaying party member's buffs enabled.

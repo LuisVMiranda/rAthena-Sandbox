@@ -1,0 +1,92 @@
+diff --git a/conf/battle/monster.conf b/conf/battle/monster.conf
+index 514d4bc..b6f87a7 100644
+--- a/conf/battle/monster.conf
++++ b/conf/battle/monster.conf
+@@ -308,6 +308,11 @@ boss_icewall_walk_block: 0
+ // 2012-04-04aRagexeRE or higher client required.
+ monster_hp_bars_info: yes
+ 
++// Show monster HP as overhead head text (name title line) for supported clients.
++// This is a server-side workaround for clients that render native HP bars under sprites.
++// 0 = Off, 1 = On
++monster_hp_headtext: no
++
+ // Should a monster respawn and a warning printed to the map server when a monster couldn't move for a long time?
+ // This can be legit gameplay (e.g. players keeping an MVP stuck inside icewall), but if you want to prevent any
+ // exploits and be notified about them, you can set this to yes.
+diff --git a/src/map/battle.cpp b/src/map/battle.cpp
+index d470630..2a7d03a 100644
+--- a/src/map/battle.cpp
++++ b/src/map/battle.cpp
+@@ -10598,6 +10598,7 @@ static const struct _battle_data {
+ 	{ "feature.roulette",                   &battle_config.feature_roulette,                1,      0,      1,              },
+ 	{ "feature.roulette_bonus_reward",      &battle_config.feature_roulette_bonus_reward,   1,      0,      1,              },
+ 	{ "monster_hp_bars_info",               &battle_config.monster_hp_bars_info,            1,      0,      1,              },
++	{ "monster_hp_headtext",               &battle_config.monster_hp_headtext,             0,      0,      1,              },
+ 	{ "save_body_style",                    &battle_config.save_body_style,                 1,      0,      1,              },
+ 	{ "monster_eye_range_bonus",            &battle_config.mob_eye_range_bonus,             0,      0,      10,             },
+ 	{ "monster_stuck_warning",              &battle_config.mob_stuck_warning,               0,      0,      1,              },
+diff --git a/src/map/battle.hpp b/src/map/battle.hpp
+index b69f1d0..b373e7c 100644
+--- a/src/map/battle.hpp
++++ b/src/map/battle.hpp
+@@ -680,6 +680,7 @@ struct Battle_Config
+ 	int32 feature_roulette;
+ 	int32 feature_roulette_bonus_reward;
+ 	int32 monster_hp_bars_info;
++	int32 monster_hp_headtext;
+ 	int32 save_body_style;
+ 	int32 mob_eye_range_bonus; //Vulture's Eye and Snake's Eye range bonus
+ 	int32 mob_stuck_warning; //Show warning if a monster is stuck too long
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index 26a8ed5..f69e212 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -10292,9 +10292,15 @@ void clif_name( const block_list* src, const block_list* bl, send_target target
+ 				safestrncpy(packet.name, md->name, NAME_LENGTH );
+ 
+ #if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
++				if (battle_config.monster_hp_headtext) {
++					char hp_title[NAME_LENGTH] = {};
++					safesnprintf(hp_title, sizeof(hp_title), "%s (%u%%)", md->name, get_percentage(md->status.hp, md->status.max_hp));
++					memcpy(packet.title, hp_title, NAME_LENGTH);
++				}
++
+ 				const unit_data* ud = unit_bl2ud(bl);
+ 
+-				if (ud != nullptr) {
++				if (ud != nullptr && packet.title[0] == '\0') {
+ 					memcpy(packet.title, ud->title, NAME_LENGTH);
+ 					packet.groupId = ud->group_id;
+ 				}
+diff --git a/src/map/mob.cpp b/src/map/mob.cpp
+index b2f7bfc..5d49850 100644
+--- a/src/map/mob.cpp
++++ b/src/map/mob.cpp
+@@ -2788,7 +2788,7 @@ void mob_damage(mob_data *md, block_list *src, int32 damage)
+ 		mob_log_damage(md, src, static_cast<int64>(damage));
+ 	}
+ 
+-	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view)
++	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view || battle_config.monster_hp_headtext)
+ 		clif_name_area(md);
+ 
+ #if PACKETVER >= 20120404
+@@ -3707,7 +3707,7 @@ void mob_revive(mob_data *md, uint32 hp)
+ 	clif_spawn(md);
+ 	skill_unit_move(md,tick,1);
+ 	mobskill_use(md, tick, MSC_SPAWN);
+-	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view)
++	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view || battle_config.monster_hp_headtext)
+ 		clif_name_area(md);
+ }
+ 
+@@ -3904,7 +3904,7 @@ int32 mob_class_change (mob_data *md, int32 mob_id)
+  *------------------------------------------*/
+ void mob_heal(mob_data *md,uint32 heal)
+ {
+-	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view)
++	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view || battle_config.monster_hp_headtext)
+ 		clif_name_area(md);
+ #if PACKETVER >= 20120404
+ 	if (battle_config.monster_hp_bars_info && !map_getmapflag(md->m, MF_HIDEMOBHPBAR)) {

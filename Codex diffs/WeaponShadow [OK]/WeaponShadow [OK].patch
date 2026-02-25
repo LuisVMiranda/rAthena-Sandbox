@@ -1,0 +1,101 @@
+diff --git a/src/common/mmo.hpp b/src/common/mmo.hpp
+index 08f9a4a779d20fb1d47231fbc5fa8df283e851eb..7bfd98eef2bf3eb9e8f24d8b50223308024cd955 100644
+--- a/src/common/mmo.hpp
++++ b/src/common/mmo.hpp
+@@ -585,7 +585,7 @@ struct mmo_charstatus {
+ 	int32 spear_faith, spear_calls;
+ 	int32 sword_faith, sword_calls;
+ 
+-	int16 weapon; // enum weapon_type
++	int16 weapon, costume_weapon; // enum weapon_type
+ 	int16 shield; // view-id
+ 	int16 head_top,head_mid,head_bottom;
+ 	int16 robe;
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index 29bde3e97a839d52adc69781902e85f1bc3fc7bc..d1139eb537849ad1dcda3a791852fa1a39822331 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -2133,6 +2133,9 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
+ 	sd->skill_keep_using.level = 0;
+ 	sd->skill_keep_using.target = 0;
+ 
++	sd->skill_animation.tid = INVALID_TIMER;
++	sd->skill_animation.step = 0;
++
+ #ifdef SECURE_NPCTIMEOUT
+ 	// Initialize to defaults/expected
+ 	sd->npc_idle_timer = INVALID_TIMER;
+@@ -2169,6 +2172,8 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
+ 
+ 	if (!(battle_config.display_skill_fail&2))
+ 		sd->state.showdelay = 1;
++	if (battle_config.hide_pet > 0)
++		sd->state.hidepet = static_cast<uint8>(battle_config.hide_pet);
+ 
+ 	memset(&sd->inventory, 0, sizeof(struct s_storage));
+ 	memset(&sd->cart, 0, sizeof(struct s_storage));
+@@ -6963,6 +6968,7 @@ enum e_setpos pc_setpos(map_session_data* sd, uint16 mapindex, int32 x, int32 y,
+ 	sd->state.item_enchant_index = 0;
+ 
+ 	if( sd->state.changemap ) { // Misc map-changing settings
++		skill_clear_animation(&sd->bl);
+ 		int32 curr_map_instance_id = map_getmapdata(sd->m)->instance_id, new_map_instance_id = (mapdata ? mapdata->instance_id : 0);
+ 
+ 		if (curr_map_instance_id != new_map_instance_id) {
+@@ -10773,6 +10779,9 @@ int32 pc_itemheal(map_session_data *sd, t_itemid itemid, int32 hp, int32 sp)
+ 			hp = 0;
+ 	}
+ 
++	if (sd->showrecovery)
++		return status_heal(sd, hp, sp, 2);
++
+ 	return status_heal(sd, hp, sp, 1);
+ }
+ 
+@@ -15479,7 +15488,7 @@ bool pc_job_can_entermap(enum e_job jobid, int32 m, int32 group_lv) {
+  * @param sd
+  **/
+ void pc_set_costume_view(map_session_data *sd) {
+-	int32 i = -1, head_low = 0, head_mid = 0, head_top = 0, robe = 0;
++	int32 i = -1, head_low = 0, head_mid = 0, head_top = 0, robe = 0, weapon = 0;
+ 	struct item_data *id = nullptr;
+ 
+ 	nullpo_retv(sd);
+@@ -15488,8 +15497,9 @@ void pc_set_costume_view(map_session_data *sd) {
+ 	head_mid = sd->status.head_mid;
+ 	head_top = sd->status.head_top;
+ 	robe = sd->status.robe;
++	weapon = sd->status.costume_weapon;
+ 
+-	sd->status.head_bottom = sd->status.head_mid = sd->status.head_top = sd->status.robe = 0;
++	sd->status.head_bottom = sd->status.head_mid = sd->status.head_top = sd->status.robe = sd->status.costume_weapon = 0;
+ 
+ 	//Added check to prevent sending the same look on multiple slots ->
+ 	//causes client to redraw item on top of itself. (suggested by Lupus)
+@@ -15510,6 +15520,8 @@ void pc_set_costume_view(map_session_data *sd) {
+ 		sd->status.head_top = id->look;
+ 	if ((i = sd->equip_index[EQI_GARMENT]) != -1 && (id = sd->inventory_data[i]))
+ 		sd->status.robe = id->look;
++	if ((i = sd->equip_index[EQI_HAND_R]) != -1 && (id = sd->inventory_data[i]))
++		sd->status.costume_weapon = id->look;
+ 
+ 	// Costumes check
+ 	if (!map_getmapflag(sd->m, MF_NOCOSTUME) && !sd->status.disable_showcostumes) {
+@@ -15529,6 +15541,8 @@ void pc_set_costume_view(map_session_data *sd) {
+ 			sd->status.head_top = id->look;
+ 		if ((i = sd->equip_index[EQI_COSTUME_GARMENT]) != -1 && (id = sd->inventory_data[i]))
+ 			sd->status.robe = id->look;
++		if ((i = sd->equip_index[EQI_SHADOW_WEAPON]) != -1 && (id = sd->inventory_data[i]))
++			sd->status.costume_weapon = id->look;
+ 	}
+ 
+ 	if (sd->setlook_head_bottom)
+@@ -15548,6 +15562,8 @@ void pc_set_costume_view(map_session_data *sd) {
+ 		clif_changelook(sd, LOOK_HEAD_TOP, sd->status.head_top);
+ 	if (robe != sd->status.robe)
+ 		clif_changelook(sd, LOOK_ROBE, sd->status.robe);
++	if (weapon != sd->status.costume_weapon)
++		clif_changelook(sd, LOOK_WEAPON, sd->status.costume_weapon > 0 ? sd->status.costume_weapon : sd->status.weapon);
+ }
+ 
+ std::shared_ptr<s_attendance_period> pc_attendance_period(){

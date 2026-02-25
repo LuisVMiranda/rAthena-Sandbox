@@ -1,0 +1,173 @@
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index f45a4e2..4391878 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -702,6 +702,7 @@ enum e_mapflag : int16 {
+	MF_MOBDROP,
+	MF_NOCAMPFIRE,
+	MF_NO_MERCY,
++	MF_BLOOD_TAX,
+	MF_MAX
+ };
+
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index cfae55f..c96d03d 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5729,6 +5729,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+			map_setmapflag(m, mapflag, state);
+			break;
+
++		case MF_BLOOD_TAX:
++			map_setmapflag(m, mapflag, state);
++			break;
++
+		// All others do not need special treatment
+		default:
+			map_setmapflag(m, mapflag, state);
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index 1d0a4a5..3646650 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -540,6 +540,7 @@
+	export_constant(MF_MOBDROP);
+	export_constant(MF_NOCAMPFIRE);
+	export_constant(MF_NO_MERCY);
++	export_constant(MF_BLOOD_TAX);
+
+	/* setcell types */
+	export_constant(CELL_WALKABLE);
+diff --git a/src/map/skill.cpp b/src/map/skill.cpp
+index e39193f..4ca9f2d 100644
+--- a/src/map/skill.cpp
++++ b/src/map/skill.cpp
+@@ -4029,6 +4029,21 @@ void skill_consume_hpspap(block_list* bl, uint16 skill_id, int32 hp, int32 sp, i
+	status_zap(bl, hp, sp, ap);
+ }
+
++static int32 skill_blood_tax_cost( const map_session_data& sd, uint16 skill_id, const s_skill_condition& require ){
++	if( !map_getmapflag( sd.m, MF_BLOOD_TAX ) )
++		return 0;
++
++	if( skill_get_inf( skill_id ) == INF_PASSIVE_SKILL )
++		return 0;
++
++	// Do not stack with skills that already consume HP by default.
++	if( require.hp > 0 || require.hp_rate > 0 )
++		return 0;
++
++	return std::max<int32>( 1, sd.battle_status.max_hp * 2 / 100 );
++}
++
++
+ /*==========================================
+  * Checks that you have the requirements for casting a skill for homunculus/mercenary.
+  * Flag:
+@@ -14347,6 +14362,12 @@ bool skill_check_condition_castbegin( map_session_data& sd, uint16 skill_id, uin
+		}
+	}
+
++	const int32 blood_tax_hp = skill_blood_tax_cost( sd, skill_id, require );
++	if( blood_tax_hp > 0 && status->hp < static_cast<uint32>( blood_tax_hp ) ) {
++		clif_displaymessage( sd.fd, msg_txt( &sd, 2930 ) );
++		return false;
++	}
++
+	return true;
+ }
+
+@@ -14659,6 +14680,10 @@ void skill_consume_requirement(map_session_data *sd, uint16 skill_id, uint16 ski
+		if(require.hp || require.sp || require.ap)
+			skill_consume_hpspap(sd, skill_id, require.hp, require.sp, require.ap);
+
++		const int32 blood_tax_hp = skill_blood_tax_cost( *sd, skill_id, require );
++		if( blood_tax_hp > 0 )
++			status_zap( sd, blood_tax_hp, 0, 0 );
++
+		if(require.spiritball > 0) { // Skills that require certain types of spheres to use
+			switch (skill_id) { // Skills that require soul spheres.
+				case SP_SOULGOLEM:
+
+
+diff --git a/conf/msg_conf/map_msg.conf b/conf/msg_conf/map_msg.conf
+index 0000000..0000000 100644
+--- a/conf/msg_conf/map_msg.conf
++++ b/conf/msg_conf/map_msg.conf
+@@ -1541,3 +1541,6 @@
+ 2924: Dueno de la Fogata: %s | Tiempo restante: %d segundos.
+ 2925: Fogata creada.
+ 2926: Fogata VIP creada.
++2930: You do not have enough blood for this sacrifice.
++2931: Voce nao tem sangue suficiente para este sacrificio.
++
+
+diff --git a/conf/msg_conf/map_msg_por.conf b/conf/msg_conf/map_msg_por.conf
+index 0000000..0000000 100644
+--- a/conf/msg_conf/map_msg_por.conf
++++ b/conf/msg_conf/map_msg_por.conf
+@@ -1538,3 +1538,6 @@
+ 1538: Detecao de macro iniciada em %d jogadores.
+
++// MF_BLOOD_TAX
++2930: Voce nao tem sangue suficiente para este sacrificio.
++
+ //Custom translations
+
+
+# Configurable Blood Tax HP rate
+diff --git a/conf/battle/feature.conf b/conf/battle/feature.conf
+index 078c913..5e55162 100644
+--- a/conf/battle/feature.conf
++++ b/conf/battle/feature.conf
+@@ -237,6 +237,10 @@ feature.campfire_ground_effect: 313
+ // Campfire display language: 1=English, 2=Portuguese, 3=Spanish
+ feature.campfire_language: 1
+
++// Blood Tax mapflag HP consumption rate in percent of Max HP.
++// Example: 2 = consume 2% of Max HP per skill cast on maps with mapflag blood_tax.
++feature.blood_tax_hp_rate: 2
++
+ // No Mercy mapflag recovery modifier (% of original recover kept).
+ // Example: 20 = keep only 20% (80% reduction) on maps with mapflag no_mercy.
+ feature.no_mercy_recover_rate: 20
+
+diff --git a/src/map/battle.hpp b/src/map/battle.hpp
+index 859102e..ed8cb2b 100644
+--- a/src/map/battle.hpp
++++ b/src/map/battle.hpp
+@@ -724,6 +724,7 @@ struct Battle_Config
+	int32 switch_remove_edp;
+	int32 feature_homunculus_autofeed;
+	int32 feature_homunculus_autofeed_rate;
++	int32 feature_blood_tax_hp_rate;
+	int32 summoner_race;
+	int32 summoner_size;
+	int32 homunculus_autofeed_always;
+
+diff --git a/src/map/battle.cpp b/src/map/battle.cpp
+index f699ab0..3e39475 100644
+--- a/src/map/battle.cpp
++++ b/src/map/battle.cpp
+@@ -10642,6 +10642,7 @@ static const struct _battle_data {
+	{ "switch_remove_edp",                  &battle_config.switch_remove_edp,               2,      0,      3,              },
+	{ "feature.homunculus_autofeed",        &battle_config.feature_homunculus_autofeed,     1,      0,      1,              },
+	{ "feature.homunculus_autofeed_rate",   &battle_config.feature_homunculus_autofeed_rate,30,     0,    100,              },
++	{ "feature.blood_tax_hp_rate",          &battle_config.feature_blood_tax_hp_rate,       2,      0,    100,              },
+	{ "summoner_race",                      &battle_config.summoner_race,                   RC_PLAYER_DORAM,      RC_FORMLESS,      RC_PLAYER_DORAM,              },
+	{ "summoner_size",                      &battle_config.summoner_size,                   SZ_SMALL,                SZ_SMALL,               SZ_BIG,              },
+	{ "homunculus_autofeed_always",         &battle_config.homunculus_autofeed_always,      1,      0,      1,              },
+
+diff --git a/src/map/skill.cpp b/src/map/skill.cpp
+index b1c0549..5371b1e 100644
+--- a/src/map/skill.cpp
++++ b/src/map/skill.cpp
+@@ -4040,7 +4040,10 @@ static int32 skill_blood_tax_cost( const map_session_data& sd, uint16 skill_id,
+	if( require.hp > 0 || require.hp_rate > 0 )
+		return 0;
+
+-	return std::max<int32>( 1, sd.battle_status.max_hp * 2 / 100 );
++	if( battle_config.feature_blood_tax_hp_rate <= 0 )
++		return 0;
++
++	return std::max<int32>( 1, sd.battle_status.max_hp * battle_config.feature_blood_tax_hp_rate / 100 );
+ }

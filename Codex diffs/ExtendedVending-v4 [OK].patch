@@ -1,0 +1,11 @@
+diff --git a/db/item_db.yml b/db/item_db.yml
+index 5dcf2ad..60d3459 100644
+--- a/db/item_db.yml
++++ b/db/item_db.yml
+@@ -95,6 +95,4 @@ Footer:
+   - Path: db/re/item_db.yml
+     Mode: Renewal
+   - Path: db/import/item_db.yml
+-  - Path: db/import/item_db_extended_vending.yml
+   - Path: db/import/item_db_bg.yml
+-  - Path: db/import/item_db_extended_vending.yml

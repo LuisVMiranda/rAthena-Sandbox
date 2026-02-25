@@ -1,0 +1,173 @@
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index b613df4..38da3c7 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -592,7 +592,8 @@ enum _sp {
+ 	SP_WEAPON_SUBSIZE, SP_ABSORB_DMG_MAXHP2, // 2102-2103
+ 	SP_SP_IGNORE_RES_RACE_RATE, SP_SP_IGNORE_MRES_RACE_RATE, SP_EMATK_HIDDEN, SP_SKILL_RATIO, // 2104-2107
+ 	SP_NON_CRIT_ATK_RATE, //2108
+-	SP_CAMPFIRE_HEAL_RATE //2109
++	SP_CAMPFIRE_HEAL_RATE, //2109
++	SP_PARTY_SYNERGY //2110
+ };
+ 
+ enum _look {
+diff --git a/src/map/party.cpp b/src/map/party.cpp
+index fb7e943..61c5c01 100644
+--- a/src/map/party.cpp
++++ b/src/map/party.cpp
+@@ -27,6 +27,7 @@
+ #include "mob.hpp"
+ #include "pc.hpp"
+ #include "pc_groups.hpp"
++#include "status.hpp"
+ #include "trade.hpp"
+ 
+ static DBMap* party_db; // int32 party_id -> struct party_data* (releases data)
+@@ -36,6 +37,18 @@ static unsigned long party_booking_nextid = 1;
+ TIMER_FUNC(party_send_xy_timer);
+ int32 party_create_byscript;
+ 
++static void party_recalc_synergy_bonus( party_data* p ){
++	if( p == nullptr )
++		return;
++
++	for( int32 i = 0; i < MAX_PARTY; i++ ){
++		map_session_data* sd = p->data[i].sd;
++
++		if( sd != nullptr )
++			status_calc_pc( sd, SCO_NONE );
++	}
++}
++
+ /*==========================================
+  * Fills the given party_member structure according to the sd provided.
+  * Used when creating/adding people to a party. [Skotlex]
+@@ -636,6 +649,7 @@ void party_member_joined( map_session_data& sd ){
+ 		p->data[i].hp = sd.battle_status.hp;
+ 			p->data[i].x = sd.x;
+ 		p->data[i].y = sd.y;
++		party_recalc_synergy_bonus( p );
+ 	} else
+ 		sd.status.party_id = 0; //He does not belongs to the party really?
+ }
+@@ -695,6 +709,7 @@ int32 party_member_added(int32 party_id,uint32 account_id,uint32 char_id, int32
+ 	if (p->instance_id > 0)
+ 		instance_reqinfo(sd, p->instance_id);
+ 
++	party_recalc_synergy_bonus( p );
+ 	return 0;
+ }
+ 
+@@ -853,6 +868,10 @@ int32 party_member_withdraw(int32 party_id, uint32 account_id, uint32 char_id, c
+ 		}
+ 	}
+ 
++	party_recalc_synergy_bonus( p );
++	if( sd != nullptr )
++		status_calc_pc( sd, SCO_NONE );
++
+ 	return 0;
+ }
+ 
+@@ -1047,6 +1066,7 @@ int32 party_recv_movemap( int32 party_id, uint32 account_id, uint32 char_id, int
+ 	}
+ 
+ 	clif_party_info( *p );
++	party_recalc_synergy_bonus( p );
+ 
+ 	return 0;
+ }
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index 49244a7..93d8f5f 100644
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -3707,6 +3707,44 @@ static void pc_bonus_addvanish(std::vector<s_vanish_bonus> &bonus, int16 rate, i
+ 	bonus.push_back(entry);
+ }
+ 
++static int32 pc_party_synergy_bonus( const map_session_data& sd ){
++	if( sd.status.party_id == 0 )
++		return 0;
++
++	party_data* p = party_search( sd.status.party_id );
++	if( p == nullptr )
++		return 0;
++
++	const char* map_name = mapindex_id2name( sd.mapindex );
++	uint64 unique_classes[MAX_PARTY] = {};
++	int32 unique_count = 0;
++
++	for( int32 i = 0; i < MAX_PARTY; i++ ){
++		const party_member& member = p->party.member[i];
++
++		if( member.account_id == 0 || !member.online )
++			continue;
++
++		if( strncmp( member.map, map_name, MAP_NAME_LENGTH_EXT ) != 0 )
++			continue;
++
++		uint64 mapid = pc_jobid2mapid( member.class_ );
++		if( mapid == 0 )
++			continue;
++
++		uint64 base_class = mapid & MAPID_SECONDMASK;
++		if( base_class == 0 )
++			base_class = mapid & MAPID_FIRSTMASK;
++
++		int32 j;
++		ARR_FIND( 0, unique_count, j, unique_classes[j] == base_class );
++		if( j == unique_count )
++			unique_classes[unique_count++] = base_class;
++	}
++
++	return min( 4, unique_count / 4 );
++}
++
+ /*==========================================
+  * Add a bonus(type) to player sd
+  * format: bonus bBonusName,val;
+@@ -4218,6 +4256,23 @@ void pc_bonus(map_session_data *sd,int32 type,int32 val)
+ 				sd->indexed_bonus.param_bonus[SP_LUK-SP_STR]+=val;
+ 			}
+ 			break;
++		case SP_PARTY_SYNERGY: {
++			if (sd->state.lr_flag == LR_FLAG_ARROW)
++				break;
++
++			int32 synergy_bonus = pc_party_synergy_bonus( *sd );
++			if( synergy_bonus == 0 )
++				break;
++
++			synergy_bonus *= val;
++			sd->indexed_bonus.param_bonus[SP_STR-SP_STR] += synergy_bonus;
++			sd->indexed_bonus.param_bonus[SP_AGI-SP_STR] += synergy_bonus;
++			sd->indexed_bonus.param_bonus[SP_VIT-SP_STR] += synergy_bonus;
++			sd->indexed_bonus.param_bonus[SP_INT-SP_STR] += synergy_bonus;
++			sd->indexed_bonus.param_bonus[SP_DEX-SP_STR] += synergy_bonus;
++			sd->indexed_bonus.param_bonus[SP_LUK-SP_STR] += synergy_bonus;
++			break;
++		}
+ 		case SP_ALL_TRAIT_STATS:
+ 			if (sd->state.lr_flag != LR_FLAG_ARROW) {
+ 				sd->indexed_bonus.param_bonus[PARAM_POW] += val;
+@@ -10387,6 +10442,7 @@ int64 pc_readparam( const map_session_data* sd, int64 type )
+ 		case SP_ADD_HEAL_RATE:   val = sd->bonus.add_heal_rate; break;
+ 		case SP_ADD_HEAL2_RATE:  val = sd->bonus.add_heal2_rate; break;
+ 		case SP_CAMPFIRE_HEAL_RATE: val = sd->bonus.campfire_heal_rate; break;
++		case SP_PARTY_SYNERGY: val = pc_party_synergy_bonus( *sd ); break;
+ 		case SP_ADD_ITEM_HEAL_RATE: val = sd->bonus.itemhealrate2; break;
+ 		case SP_EMATK:           val = sd->bonus.ematk; break;
+ 		case SP_EMATK_HIDDEN:    val = sd->bonus.ematk_hidden; break;
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index a364b77..cbafbdd 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -756,6 +756,7 @@
+ 	export_constant2("bHealPower",SP_ADD_HEAL_RATE);
+ 	export_constant2("bHealPower2",SP_ADD_HEAL2_RATE);
+ 	export_constant2("bCampfireHeal",SP_CAMPFIRE_HEAL_RATE);
++	export_constant2("bPartySynergy",SP_PARTY_SYNERGY);
+ 	export_constant2("bIgnoreResRaceRate",SP_SP_IGNORE_RES_RACE_RATE);
+ 	export_constant2("bIgnoreMResRaceRate",SP_SP_IGNORE_MRES_RACE_RATE);
+ 

@@ -1,0 +1,567 @@
+diff --git a/conf/atcommands.yml b/conf/atcommands.yml
+index 9ff52bbf257cb4faa4d71274f5e43fe49cba0df6..67de1be01f86d7fba2b7bb745d5d737b37f8009f 100644
+--- a/conf/atcommands.yml
++++ b/conf/atcommands.yml
+@@ -133,6 +133,11 @@ Body:
+       - at
+     Help: |
+       Allows you to vend while you are offline.
++  - Command: autovend
++    Aliases:
++      - av
++    Help: |
++      Allows vending-only offline mode and supports account-level autovend restrictions.
+   - Command: ban
+     Aliases:
+       - banish
+@@ -1266,6 +1271,16 @@ Body:
+     Help: |
+       Params: <quest ID>
+       Activates the quest with quest ID <quest ID>.
++  - Command: hidepet
++    Aliases:
++      - hidepetall
++    Help: |
++      Hides or shows pets around you.
++      @hidepet hides other players' pets.
++      @hidepetall hides all pets, including yours.
++  - Command: spbar
++    Help: |
++      Toggles party SP bar updates for supported clients.
+   - Command: showdelay
+     Help: |
+       Shows/hides the "There is a delay after this skill" message.
+diff --git a/conf/import-tmpl/atcommands.yml b/conf/import-tmpl/atcommands.yml
+index 547c92da222abe07f2b5c4926cc44496663c36de..cc285f64cf8ff1d0f80b5d3d5f6e6028e5d4995e 100644
+--- a/conf/import-tmpl/atcommands.yml
++++ b/conf/import-tmpl/atcommands.yml
+@@ -31,3 +31,17 @@
+ Header:
+   Type: ATCOMMAND_DB
+   Version: 1
++
++Body:
++  # Migrated from diffs/Hidepet/[Daegaladh] hidepet 2.2.diff
++  - Command: hidepet
++    Aliases:
++      - hidepets
++    Help: |
++      Hides or shows all pets except yours.
++  - Command: hidepetall
++    Aliases:
++      - hideallpet
++      - hideallpets
++    Help: |
++      Hides or shows all pets, including yours.
+diff --git a/src/map/atcommand.cpp b/src/map/atcommand.cpp
+index 30d14f7705bf80667abf15c5702df9e9b3e3622e..1f721c80755df6e24fe68a3950135ee66dbeae00 100644
+--- a/src/map/atcommand.cpp
++++ b/src/map/atcommand.cpp
+@@ -4914,6 +4914,8 @@ ACMD_FUNC(mapinfo) {
+ 		strcat(atcmd_output, " NoTomb |");
+ 	if (map_getmapflag(m_id, MF_NOCOSTUME))
+ 		strcat(atcmd_output, " NoCostume |");
++	if (map_getmapflag(m_id, MF_NORESS))
++		strcat(atcmd_output, " NoRess |");
+ 	if (map_getmapflag(m_id, MF_NOBANK))
+ 		strcat(atcmd_output, " NoBank |");
+ 	if (map_getmapflag(m_id, MF_NOCASHSHOP))
+@@ -6819,11 +6821,21 @@ ACMD_FUNC(autotrade) {
+ 		return -1;
+ 	}
+ 
++	if (vending_autovend_check(sd->status.account_id)) {
++		clif_displaymessage(fd, "You already have an active @autovend on this account.");
++		return -1;
++	}
++
+ 	if( !sd->state.vending && !sd->state.buyingstore ) { //check if player is vending or buying
+ 		clif_displaymessage(fd, msg_txt(sd,549)); // "You should have a shop open to use @autotrade."
+ 		return -1;
+ 	}
+ 
++	if (sd->state.vending && battle_config.autovend_enable && battle_config.autovend_all_vending) {
++		vending_create_autovend(*sd);
++		return 0;
++	}
++
+ 	sd->state.autotrade = 1;
+ 	if (battle_config.autotrade_monsterignore)
+ 		sd->state.block_action |= PCBLOCK_IMMUNE;
+@@ -6850,6 +6862,38 @@ ACMD_FUNC(autotrade) {
+ 	return 0;
+ }
+ 
++ACMD_FUNC(autovend) {
++	nullpo_retr(-1, sd);
++
++	if (!battle_config.autovend_enable) {
++		clif_displaymessage(fd, "Autovend is disabled.");
++		return -1;
++	}
++
++	if (map_getmapflag(sd->m, MF_AUTOTRADE) != battle_config.autotrade_mapflag) {
++		clif_displaymessage(fd, "Autovend is not allowed on this map.");
++		return -1;
++	}
++
++	if (pc_isdead(sd)) {
++		clif_displaymessage(fd, "You cannot autovend when dead.");
++		return -1;
++	}
++
++	if (!sd->state.vending) {
++		clif_displaymessage(fd, msg_txt(sd,549)); // "You should have a shop open to use @autotrade."
++		return -1;
++	}
++
++	if (vending_autovend_check(sd->status.account_id)) {
++		clif_displaymessage(fd, "You already have an active @autovend on this account.");
++		return -1;
++	}
++
++	vending_create_autovend(*sd);
++	return 0;
++}
++
+ /*==========================================
+  * @changegm by durf (changed by Lupus)
+  * Changes Master of your Guild to a specified guild member
+@@ -9189,6 +9233,91 @@ ACMD_FUNC(showdelay)
+ 	return 0;
+ }
+ 
++static int32 atcommand_hidepet_sub(block_list* bl, va_list ap) {
++	map_session_data* sd = va_arg(ap, map_session_data*);
++	const bool hide_all = va_arg(ap, int32) != 0;
++
++	nullpo_ret(sd);
++	nullpo_ret(bl);
++
++	if (!hide_all && sd->pd != nullptr && sd->pd->id == bl->id) {
++		return 0;
++	}
++
++	clif_clearunit_single(bl->id, CLR_OUTSIGHT, *sd);
++	return 0;
++}
++
++ACMD_FUNC(hidepet) {
++	nullpo_retr(-1, sd);
++
++	const char* base_command = command;
++	if (base_command != nullptr && (*base_command == atcommand_symbol || *base_command == charcommand_symbol)) {
++		++base_command;
++	}
++
++	base_command = atcommand_alias_db.checkAlias(base_command != nullptr ? base_command : "hidepet");
++	const bool hide_all = base_command != nullptr && strcmpi(base_command, "hidepetall") == 0;
++	const uint8 previous_state = sd->state.hidepet;
++
++	switch (sd->state.hidepet) {
++		case 0: sd->state.hidepet = hide_all ? 2 : 1; break;
++		case 1: sd->state.hidepet = hide_all ? 2 : 0; break;
++		default: sd->state.hidepet = hide_all ? 0 : 1; break;
++	}
++
++	if (sd->state.hidepet == 0) {
++		map_foreachinallrange(clif_insight, sd, AREA_SIZE, BL_PET, sd);
++		if (previous_state == 2 && sd->pd != nullptr) {
++			clif_spawn(sd->pd, true);
++		}
++		clif_displaymessage(fd, "All pets are visible.");
++	} else {
++		map_foreachinallrange(atcommand_hidepet_sub, sd, AREA_SIZE, BL_PET, sd, hide_all ? 1 : 0);
++		clif_displaymessage(fd, hide_all ? "All pets are hidden." : "All pets except yours are hidden.");
++	}
++
++	return 0;
++}
++
++ACMD_FUNC(spbar) {
++	nullpo_retr(-1, sd);
++
++	battle_config.party_sp_on = 1 - battle_config.party_sp_on;
++
++	struct s_mapiterator* iter = mapit_getallusers();
++	for (map_session_data* pl_sd = static_cast<map_session_data*>(mapit_first(iter)); mapit_exists(iter); pl_sd = static_cast<map_session_data*>(mapit_next(iter))) {
++		if (pl_sd == nullptr) {
++			continue;
++		}
++		clif_refresh(pl_sd);
++	}
++	mapit_free(iter);
++
++	clif_displaymessage(fd, battle_config.party_sp_on ? "Party SP bar is enabled." : "Party SP bar is disabled.");
++	return 0;
++}
++
++ACMD_FUNC(partybuff) {
++	nullpo_retr(-1, sd);
++
++	if( sd->status.party_id == 0 ) {
++		clif_displaymessage(fd, msg_txt(sd,1071));
++		return -1;
++	}
++
++	party_data* p = party_search(sd->status.party_id);
++	if( p == nullptr ) {
++		clif_displaymessage(fd, msg_txt(sd,1071));
++		return -1;
++	}
++
++	sd->state.spb = !sd->state.spb;
++	clif_displaymessage(fd, sd->state.spb ? msg_txt(sd,1073) : msg_txt(sd,1072));
++	clif_party_info(*p, sd);
++	return 0;
++}
++
+ /*==========================================
+  * Duel organizing functions [LuzZza]
+  *
+@@ -11464,6 +11593,19 @@ ACMD_FUNC(macrochecker){
+ 	return 0;
+ }
+ 
++ACMD_FUNC(showrecovery)
++{
++	sd->showrecovery = !sd->showrecovery;
++	pc_setglobalreg(sd, add_str("AT_showrecovery"), sd->showrecovery);
++
++	if (sd->showrecovery)
++		clif_displaymessage(fd, "Hp/sp recovery numbers is visible");
++	else
++		clif_displaymessage(fd, "Hp/sp recovery numbers is hidden");
++
++	return 0;
++}
++
+ #include <custom/atcommand.inc>
+ 
+ /**
+@@ -11708,7 +11850,14 @@ void atcommand_basecommands(void) {
+ 		ACMD_DEF(showexp),
+ 		ACMD_DEF(showzeny),
+ 		ACMD_DEF(showdelay),
++		ACMD_DEF(hidepet),
++		ACMD_DEF2("hidepetall", hidepet),
++		ACMD_DEF(spbar),
++		ACMD_DEF(partybuff),
++		ACMD_DEF2("spb", partybuff),
+ 		ACMD_DEF(autotrade),
++		ACMD_DEF(autovend),
++		ACMD_DEF2("av", autovend),
+ 		ACMD_DEF(changegm),
+ 		ACMD_DEF(changeleader),
+ 		ACMD_DEF(partyoption),
+diff --git a/src/map/clif.cpp b/src/map/clif.cpp
+index d3f4c71b6ff454db21528dbf4de62d2772acb02f..19b5223f9d4ec73661852b75b189b877efc38eb7 100644
+--- a/src/map/clif.cpp
++++ b/src/map/clif.cpp
+@@ -4,6 +4,7 @@
+ 
+ #include "clif.hpp"
+ 
++#include <array>
+ #include <cstdarg>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -422,6 +423,8 @@ static int32 clif_send_sub(block_list *bl, va_list ap)
+ 	case AREA_WOS:
+ 		if (bl == src_bl)
+ 			return 0;
++		if (src_bl->type == BL_PET && (sd->state.hidepet == 2 || (sd->state.hidepet == 1 && !(sd->pd != nullptr && sd->pd->id == src_bl->id))))
++			return 0;
+ 	break;
+ 	case AREA_WOC:
+ 		if (sd->chatID || bl == src_bl)
+@@ -563,6 +566,7 @@ int32 clif_send(const void* buf, int32 len, const block_list* bl, enum send_targ
+ 	case PARTY_WOS:
+ 	case PARTY_SAMEMAP:
+ 	case PARTY_SAMEMAP_WOS:
++	case PARTY_BUFF_INFO:
+ 		if (sd && sd->status.party_id)
+ 			p = party_search(sd->status.party_id);
+ 
+@@ -577,7 +581,10 @@ int32 clif_send(const void* buf, int32 len, const block_list* bl, enum send_targ
+ 				if( sd->id == bl->id && (type == PARTY_WOS || type == PARTY_SAMEMAP_WOS || type == PARTY_AREA_WOS) )
+ 					continue;
+ 
+-				if( type != PARTY && type != PARTY_WOS && bl->m != sd->m )
++				if( type != PARTY_BUFF_INFO && type != PARTY && type != PARTY_WOS && bl->m != sd->m )
++					continue;
++
++				if( type == PARTY_BUFF_INFO && !sd->state.spb )
+ 					continue;
+ 
+ 				if( (type == PARTY_AREA || type == PARTY_AREA_WOS) && (sd->x < x0 || sd->y < y0 || sd->x > x1 || sd->y > y1) )
+@@ -3514,7 +3521,7 @@ static int32 clif_hpmeter_sub( block_list *bl, va_list ap ){
+ 	nullpo_ret(tsd);
+ 
+ 	if( pc_has_permission( tsd, PC_PERM_VIEW_HPMETER ) ){
+-		 clif_hpmeter_single( *tsd, sd->status.account_id, sd->battle_status.hp, sd->battle_status.max_hp );
++		 clif_hpmeter_single( *tsd, sd->status.account_id, sd->battle_status.hp, sd->battle_status.max_hp, 0, 0 );
+ 	}
+ 	return 0;
+ }
+@@ -5005,11 +5012,12 @@ static void clif_getareachar_pc(map_session_data* sd,map_session_data* dstsd)
+ 		clif_servantball( *dstsd, sd, SELF );
+ 	if (dstsd->abyssball > 0)
+ 		clif_abyssball( *dstsd, sd, SELF );
+-	if( (sd->status.party_id && dstsd->status.party_id == sd->status.party_id) || //Party-mate, or hpdisp setting.
++	const bool is_party_member = sd->status.party_id && dstsd->status.party_id == sd->status.party_id;
++	if( is_party_member || //Party-mate, or hpdisp setting.
+ 		(sd->bg_id && sd->bg_id == dstsd->bg_id) || //BattleGround
+ 		pc_has_permission(sd, PC_PERM_VIEW_HPMETER)
+ 	)
+-	clif_hpmeter_single( *sd, dstsd->id, dstsd->battle_status.hp, dstsd->battle_status.max_hp );
++		clif_hpmeter_single( *sd, dstsd->id, dstsd->battle_status.hp, dstsd->battle_status.max_hp, is_party_member ? dstsd->battle_status.sp : 0, is_party_member ? dstsd->battle_status.max_sp : 0 );
+ 
+ 	// display link (sd - dstsd) to sd
+ 	ARR_FIND( 0, MAX_DEVOTION, i, sd->devotion[i] == dstsd->id );
+@@ -5043,6 +5051,10 @@ void clif_getareachar_unit( map_session_data* sd,block_list *bl ){
+ 		return;
+ 	}
+ 
++	if (bl->type == BL_PET && (sd->state.hidepet == 2 || (sd->state.hidepet == 1 && !(sd->pd != nullptr && sd->pd->id == bl->id)))) {
++		return;
++	}
++
+ 	if( bl->type == BL_NPC && npc_is_hidden_dynamicnpc( *( (npc_data*)bl ), *sd ) ){
+ 		// Do not send anything
+ 		return;
+@@ -6043,6 +6055,81 @@ void clif_skill_cooldown( map_session_data &sd, uint16 skill_id, t_tick tick ){
+ #endif
+ }
+ 
++static void clif_skill_animation_start(const block_list& src, const block_list& dst, t_tick tick, int32 sdelay, uint16 skill_id){
++	if (src.type != BL_PC) {
++		return;
++	}
++
++	const s_skill_animation_entry* animation = skill_animation_get(skill_id);
++	if (animation == nullptr) {
++		return;
++	}
++
++	map_session_data* sd = BL_CAST(BL_PC, const_cast<block_list*>(&src));
++	if (sd == nullptr) {
++		return;
++	}
++	skill_clear_animation(&sd->bl);
++
++	int32 start = (animation->start_delay >= 0) ? animation->start_delay : sdelay;
++	if (start < 0) {
++		start = 0;
++	}
++
++	auto* env = new s_skill_animation_environment{};
++	env->skill_id = skill_id;
++	env->target_id = dst.id;
++	env->base_dir = static_cast<int8>(unit_getdir(&dst));
++
++	sd->skill_animation.step = 0;
++	sd->skill_animation.tid = add_timer(tick + start, skill_play_animation, sd->bl.id, reinterpret_cast<intptr_t>(env));
++	if (sd->skill_animation.tid == INVALID_TIMER) {
++		delete env;
++		skill_clear_animation(&sd->bl);
++	}
++}
++
++void clif_skill_animation_motion(const block_list& src, int32 target_id, int32 motion_speed){
++#if PACKETVER_MAIN_NUM >= 20071113 || PACKETVER_RE_NUM >= 20071113 || defined(PACKETVER_ZERO)
++	PACKET_ZC_NOTIFY_ACT packet{};
++
++	packet.packetType = HEADER_ZC_NOTIFY_ACT;
++	packet.srcID = src.id;
++	packet.targetID = target_id;
++	packet.serverTick = client_tick(gettick());
++	packet.srcSpeed = motion_speed;
++	packet.dmgSpeed = 0;
++	packet.damage = 0;
++	packet.div = 1;
++	packet.type = DMG_CRITICAL;
++	packet.damage2 = 0;
++
++	clif_send(&packet, sizeof(packet), &src, AREA);
++#else
++	(void)src;
++	(void)target_id;
++	(void)motion_speed;
++#endif
++}
++
++void clif_skill_animation_dir(const block_list& src, int32 target_id, uint8 dir){
++#if PACKETVER_MAIN_NUM >= 20071113 || PACKETVER_RE_NUM >= 20071113 || defined(PACKETVER_ZERO)
++	PACKET_ZC_CHANGE_DIRECTION packet{};
++
++	packet.packetType = HEADER_ZC_CHANGE_DIRECTION;
++	packet.srcId = src.id;
++	packet.headDir = 0;
++	packet.dir = dir;
++
++	clif_send(&packet, sizeof(packet), &src, AREA);
++	(void)target_id;
++#else
++	(void)src;
++	(void)target_id;
++	(void)dir;
++#endif
++}
++
+ /// Skill attack effect and damage.
+ /// 0114 <skill id>.W <src id>.L <dst id>.L <tick>.L <src delay>.L <dst delay>.L <damage>.W <level>.W <div>.W <type>.B (ZC_NOTIFY_SKILL)
+ /// 01de <skill id>.W <src id>.L <dst id>.L <tick>.L <src delay>.L <dst delay>.L <damage>.L <level>.W <div>.W <type>.B (ZC_NOTIFY_SKILL2)
+@@ -6098,6 +6185,8 @@ void clif_skill_damage( const block_list& src, const block_list& dst, t_tick tic
+ 		}
+ 		clif_send( &packet, sizeof( packet ), &src, SELF );
+ 	}
++
++	clif_skill_animation_start(src, dst, tick, sdelay, skill_id);
+ }
+ 
+ 
+@@ -7900,10 +7989,64 @@ void clif_party_info( const party_data& party, const map_session_data* sd ){
+ 		c++;
+ 	}
+ 
++	if( target == PARTY ){
++		clif_send( p, p->packetLen, sd, PARTY );
++
++		std::vector<uint8> buff_packet( p->packetLen );
++		memcpy( buff_packet.data(), p, p->packetLen );
++		PACKET_ZC_GROUP_LIST* pb = reinterpret_cast<PACKET_ZC_GROUP_LIST*>( buff_packet.data() );
++		for( int32 i = 0, c = 0; i < MAX_PARTY; i++ ){
++			const party_member& m = party.party.member[i];
++			if( m.account_id == 0 )
++				continue;
++			const map_session_data* party_sd = party.data[i].sd;
++			if( party_sd != nullptr ){
++				char output[NAME_LENGTH + 8] = "[";
++				strcat( output, party_sd->sc.getSCE(SC_BLESSING) != nullptr ? "B" : "_" );
++				strcat( output, party_sd->sc.getSCE(SC_INCREASEAGI) != nullptr ? "A" : "_" );
++				strcat( output,
++					( party_sd->sc.getSCE(SC_CP_WEAPON) != nullptr && party_sd->sc.getSCE(SC_CP_SHIELD) != nullptr &&
++					  party_sd->sc.getSCE(SC_CP_ARMOR) != nullptr && party_sd->sc.getSCE(SC_CP_HELM) != nullptr ) ? "F" : "_" );
++				strcat( output, party_sd->sc.getSCE(SC_SPIRIT) != nullptr ? "S" : "_" );
++				strcat( output, party_sd->sc.getSCE(SC_DEVOTION) != nullptr ? "+" : "_" );
++				strcat( output, "]" );
++				strncat( output, m.name, NAME_LENGTH - 1 );
++				safestrncpy( pb->members[c].playerName, output, sizeof( pb->members[c].playerName ) );
++			}
++			c++;
++		}
++		clif_send( pb, pb->packetLen, sd, PARTY_BUFF_INFO );
++		return;
++	}
++
++	if( target == SELF && sd->state.spb ){
++		for( int32 i = 0, c = 0; i < MAX_PARTY; i++ ){
++			const party_member& m = party.party.member[i];
++			if( m.account_id == 0 )
++				continue;
++			const map_session_data* party_sd = party.data[i].sd;
++			if( party_sd != nullptr ){
++				char output[NAME_LENGTH + 8] = "[";
++				strcat( output, party_sd->sc.getSCE(SC_BLESSING) != nullptr ? "B" : "_" );
++				strcat( output, party_sd->sc.getSCE(SC_INCREASEAGI) != nullptr ? "A" : "_" );
++				strcat( output,
++					( party_sd->sc.getSCE(SC_CP_WEAPON) != nullptr && party_sd->sc.getSCE(SC_CP_SHIELD) != nullptr &&
++					  party_sd->sc.getSCE(SC_CP_ARMOR) != nullptr && party_sd->sc.getSCE(SC_CP_HELM) != nullptr ) ? "F" : "_" );
++				strcat( output, party_sd->sc.getSCE(SC_SPIRIT) != nullptr ? "S" : "_" );
++				strcat( output, party_sd->sc.getSCE(SC_DEVOTION) != nullptr ? "+" : "_" );
++				strcat( output, "]" );
++				strncat( output, m.name, NAME_LENGTH - 1 );
++				safestrncpy( p->members[c].playerName, output, sizeof( p->members[c].playerName ) );
++			}
++			c++;
++		}
++	}
++
+ 	clif_send( p, p->packetLen, sd, target );
+ }
+ 
+ 
++
+ /// The player's 'party invite' state, sent during login (ZC_PARTY_CONFIG).
+ /// 02c9 <flag>.B
+ /// flag:
+@@ -8107,6 +8250,10 @@ void clif_party_hp( const map_session_data& sd ){
+ #else
+ 	p.hp = sd.battle_status.hp;
+ 	p.maxhp = sd.battle_status.max_hp;
++#if PACKETVER_ZERO_NUM >= 20210504
++	p.sp = battle_config.party_sp_on ? sd.battle_status.sp : 0;
++	p.maxsp = battle_config.party_sp_on ? sd.battle_status.max_sp : 0;
++#endif
+ #endif
+ 
+ 	clif_send( &p, sizeof( p ), &sd, PARTY_AREA_WOS );
+@@ -8144,7 +8291,7 @@ void clif_party_job_and_level( const map_session_data& sd ){
+ /*==========================================
+  * Sends HP bar to a single fd. [Skotlex]
+  *------------------------------------------*/
+-void clif_hpmeter_single( const map_session_data& sd, uint32 id, uint32 hp, uint32 maxhp ){
++void clif_hpmeter_single( const map_session_data& sd, uint32 id, uint32 hp, uint32 maxhp, uint32 sp, uint32 maxsp ){
+ 	PACKET_ZC_NOTIFY_HP_TO_GROUPM p = {};
+ 
+ 	p.PacketType = HEADER_ZC_NOTIFY_HP_TO_GROUPM;
+@@ -8161,6 +8308,10 @@ void clif_hpmeter_single( const map_session_data& sd, uint32 id, uint32 hp, uint
+ #else
+ 	p.hp = hp;
+ 	p.maxhp = maxhp;
++#if PACKETVER_ZERO_NUM >= 20210504
++	p.sp = battle_config.party_sp_on ? sp : 0;
++	p.maxsp = battle_config.party_sp_on ? maxsp : 0;
++#endif
+ #endif
+ 
+ 	clif_send( &p, sizeof( p ), &sd, SELF );
+@@ -10071,7 +10222,17 @@ void clif_name( const block_list* src, const block_list* bl, send_target target
+ #if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
+ 				const unit_data* ud = unit_bl2ud(bl);
+ 
+-				if (ud != nullptr) {
++				if (battle_config.mob_ele_view) {
++					static constexpr std::array<const char*, ELE_MAX> ele_names = { "Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead" };
++					if (md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX) {
++						char output[NAME_LENGTH] = {};
++						safesnprintf(output, sizeof(output), "%s Lv: %d", ele_names[md->status.def_ele], md->status.ele_lv);
++						memcpy(packet.title, output, NAME_LENGTH);
++						packet.groupId = 51 + md->status.def_ele;
++					}
++				}
++
++				if (ud != nullptr && packet.title[0] == '\0') {
+ 					memcpy(packet.title, ud->title, NAME_LENGTH);
+ 					packet.groupId = ud->group_id;
+ 				}
+@@ -10893,6 +11054,16 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
+ 		status_calc_bl(sd->ed, { SCB_SPEED }); //Elemental mimic their master's speed on each map change
+ 	}
+ 
++#ifdef VIP_ENABLE
++	if (!sd->state.autotrade) {
++		const time_t now = time(nullptr);
++		status_change_end(&sd->bl, SC_VIPSTATE);
++		if (pc_isvip(sd) && sd->vip.time > static_cast<uint32>(now)) {
++			sc_start(nullptr, &sd->bl, SC_VIPSTATE, 100, 1, static_cast<t_tick>(sd->vip.time - now) * 1000);
++		}
++	}
++#endif
++
+ 	if(sd->state.connect_new) {
+ 		int32 lv;
+ 		guild_notice = true;
+@@ -15777,6 +15948,11 @@ void clif_parse_HomMenu(int32 fd, map_session_data *sd)
+ /// 0292
+ void clif_parse_AutoRevive(int32 fd, map_session_data *sd)
+ {
++	if (map_getmapflag(sd->m, MF_NORESS)) {
++		clif_displaymessage(sd->fd, msg_txt(sd, 452));
++		return;
++	}
++
+ 	pc_revive_item(sd);
+ }
+ 

@@ -1,0 +1,1014 @@
+diff --git a/diffs/Wordboss-cutins [OK]/CLIENT_ASSET_MANIFEST.md b/diffs/Wordboss-cutins [OK]/CLIENT_ASSET_MANIFEST.md
+new file mode 100644
+index 0000000..95cc43e
+--- /dev/null
++++ b/diffs/Wordboss-cutins [OK]/CLIENT_ASSET_MANIFEST.md	
+@@ -0,0 +1,118 @@
++# Wordboss Cutins Client Asset Manifest
++
++- Source directory: `diffs/Wordboss-cutins [OK]/data/texture/À¯ÀúÀÎÅÍÆäÀÌ½º/illust/`
++- Client destination: `data/texture/À¯ÀúÀÎÅÍÆäÀÌ½º/illust/` (same encoded path as provided archive).
++- Asset count: **101** `.bmp` files.
++- Numeric range: **0..100**.
++- Missing indices: **none**.
++
++## Numbering assumptions used by script/server
++
++1. `npc/custom/events/worldboss.txt` calls `cutin(""+.P_HP+"", 1)` where `.P_HP` is current boss HP percent from 0 to 100.
++2. Therefore each integer percent requires a same-name BMP (`0.bmp`..`100.bmp`) in the client illust folder.
++3. On boss death, script forces `cutin("0", 1)`, then `cutin("", 255)` to hide the overlay; `0.bmp` must exist for a smooth transition.
++4. Server-side green aura reduction message/config uses percentages as well (`greenaura_reduction_rate`), aligned with the 0..100 cutin naming convention.
++
++## Asset list
++
++- `0.bmp`
++- `1.bmp`
++- `2.bmp`
++- `3.bmp`
++- `4.bmp`
++- `5.bmp`
++- `6.bmp`
++- `7.bmp`
++- `8.bmp`
++- `9.bmp`
++- `10.bmp`
++- `11.bmp`
++- `12.bmp`
++- `13.bmp`
++- `14.bmp`
++- `15.bmp`
++- `16.bmp`
++- `17.bmp`
++- `18.bmp`
++- `19.bmp`
++- `20.bmp`
++- `21.bmp`
++- `22.bmp`
++- `23.bmp`
++- `24.bmp`
++- `25.bmp`
++- `26.bmp`
++- `27.bmp`
++- `28.bmp`
++- `29.bmp`
++- `30.bmp`
++- `31.bmp`
++- `32.bmp`
++- `33.bmp`
++- `34.bmp`
++- `35.bmp`
++- `36.bmp`
++- `37.bmp`
++- `38.bmp`
++- `39.bmp`
++- `40.bmp`
++- `41.bmp`
++- `42.bmp`
++- `43.bmp`
++- `44.bmp`
++- `45.bmp`
++- `46.bmp`
++- `47.bmp`
++- `48.bmp`
++- `49.bmp`
++- `50.bmp`
++- `51.bmp`
++- `52.bmp`
++- `53.bmp`
++- `54.bmp`
++- `55.bmp`
++- `56.bmp`
++- `57.bmp`
++- `58.bmp`
++- `59.bmp`
++- `60.bmp`
++- `61.bmp`
++- `62.bmp`
++- `63.bmp`
++- `64.bmp`
++- `65.bmp`
++- `66.bmp`
++- `67.bmp`
++- `68.bmp`
++- `69.bmp`
++- `70.bmp`
++- `71.bmp`
++- `72.bmp`
++- `73.bmp`
++- `74.bmp`
++- `75.bmp`
++- `76.bmp`
++- `77.bmp`
++- `78.bmp`
++- `79.bmp`
++- `80.bmp`
++- `81.bmp`
++- `82.bmp`
++- `83.bmp`
++- `84.bmp`
++- `85.bmp`
++- `86.bmp`
++- `87.bmp`
++- `88.bmp`
++- `89.bmp`
++- `90.bmp`
++- `91.bmp`
++- `92.bmp`
++- `93.bmp`
++- `94.bmp`
++- `95.bmp`
++- `96.bmp`
++- `97.bmp`
++- `98.bmp`
++- `99.bmp`
++- `100.bmp`
+diff --git a/diffs/Wordboss-cutins/WorldBossv3.diff b/diffs/Wordboss-cutins [OK]/WorldBossv3.diff
+similarity index 100%
+rename from diffs/Wordboss-cutins/WorldBossv3.diff
+rename to diffs/Wordboss-cutins [OK]/WorldBossv3.diff
+diff --git a/diffs/Wordboss-cutins/WorldBossv3.rebased.patch b/diffs/Wordboss-cutins [OK]/WorldBossv3.rebased.patch
+similarity index 100%
+rename from diffs/Wordboss-cutins/WorldBossv3.rebased.patch
+rename to diffs/Wordboss-cutins [OK]/WorldBossv3.rebased.patch
+diff --git a/diffs/Wordboss-cutins/data.rar b/diffs/Wordboss-cutins [OK]/data.rar
+similarity index 100%
+rename from diffs/Wordboss-cutins/data.rar
+rename to diffs/Wordboss-cutins [OK]/data.rar
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/0.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/0.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/0.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/0.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/1.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/1.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/1.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/1.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/10.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/10.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/10.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/10.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/100.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/100.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/100.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/100.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/11.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/11.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/11.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/11.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/12.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/12.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/12.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/12.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/13.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/13.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/13.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/13.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/14.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/14.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/14.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/14.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/15.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/15.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/15.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/15.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/16.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/16.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/16.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/16.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/17.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/17.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/17.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/17.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/18.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/18.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/18.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/18.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/19.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/19.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/19.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/19.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/2.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/2.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/2.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/2.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/20.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/20.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/20.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/20.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/21.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/21.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/21.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/21.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/22.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/22.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/22.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/22.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/23.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/23.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/23.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/23.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/24.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/24.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/24.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/24.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/25.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/25.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/25.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/25.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/26.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/26.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/26.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/26.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/27.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/27.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/27.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/27.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/28.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/28.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/28.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/28.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/29.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/29.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/29.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/29.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/3.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/3.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/3.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/3.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/30.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/30.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/30.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/30.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/31.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/31.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/31.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/31.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/32.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/32.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/32.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/32.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/33.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/33.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/33.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/33.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/34.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/34.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/34.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/34.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/35.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/35.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/35.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/35.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/36.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/36.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/36.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/36.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/37.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/37.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/37.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/37.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/38.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/38.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/38.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/38.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/39.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/39.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/39.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/39.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/4.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/4.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/4.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/4.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/40.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/40.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/40.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/40.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/41.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/41.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/41.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/41.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/42.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/42.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/42.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/42.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/43.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/43.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/43.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/43.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/44.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/44.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/44.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/44.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/45.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/45.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/45.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/45.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/46.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/46.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/46.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/46.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/47.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/47.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/47.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/47.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/48.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/48.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/48.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/48.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/49.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/49.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/49.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/49.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/5.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/5.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/5.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/5.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/50.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/50.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/50.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/50.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/51.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/51.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/51.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/51.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/52.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/52.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/52.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/52.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/53.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/53.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/53.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/53.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/54.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/54.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/54.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/54.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/55.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/55.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/55.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/55.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/56.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/56.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/56.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/56.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/57.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/57.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/57.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/57.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/58.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/58.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/58.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/58.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/59.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/59.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/59.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/59.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/6.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/6.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/6.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/6.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/60.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/60.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/60.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/60.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/61.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/61.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/61.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/61.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/62.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/62.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/62.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/62.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/63.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/63.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/63.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/63.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/64.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/64.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/64.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/64.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/65.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/65.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/65.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/65.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/66.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/66.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/66.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/66.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/67.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/67.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/67.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/67.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/68.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/68.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/68.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/68.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/69.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/69.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/69.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/69.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/7.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/7.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/7.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/7.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/70.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/70.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/70.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/70.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/71.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/71.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/71.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/71.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/72.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/72.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/72.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/72.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/73.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/73.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/73.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/73.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/74.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/74.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/74.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/74.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/75.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/75.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/75.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/75.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/76.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/76.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/76.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/76.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/77.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/77.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/77.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/77.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/78.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/78.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/78.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/78.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/79.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/79.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/79.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/79.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/8.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/8.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/8.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/8.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/80.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/80.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/80.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/80.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/81.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/81.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/81.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/81.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/82.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/82.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/82.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/82.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/83.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/83.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/83.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/83.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/84.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/84.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/84.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/84.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/85.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/85.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/85.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/85.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/86.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/86.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/86.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/86.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/87.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/87.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/87.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/87.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/88.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/88.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/88.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/88.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/89.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/89.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/89.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/89.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/9.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/9.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/9.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/9.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/90.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/90.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/90.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/90.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/91.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/91.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/91.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/91.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/92.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/92.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/92.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/92.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/93.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/93.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/93.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/93.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/94.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/94.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/94.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/94.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/95.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/95.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/95.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/95.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/96.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/96.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/96.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/96.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/97.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/97.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/97.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/97.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/98.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/98.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/98.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/98.bmp"
+diff --git "a/diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/99.bmp" "b/diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/99.bmp"
+similarity index 100%
+rename from "diffs/Wordboss-cutins/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/99.bmp"
+rename to "diffs/Wordboss-cutins [OK]/data/texture/\303\200\302\257\303\200\303\272\303\200\303\216\303\205\303\215\303\206\303\244\303\200\303\214\302\275\302\272/illust/99.bmp"
+diff --git a/diffs/Wordboss-cutins/worldboss.txt b/diffs/Wordboss-cutins [OK]/worldboss.txt
+similarity index 100%
+rename from diffs/Wordboss-cutins/worldboss.txt
+rename to diffs/Wordboss-cutins [OK]/worldboss.txt
+diff --git a/npc/custom/events/worldboss.txt b/npc/custom/events/worldboss.txt
+new file mode 100644
+index 0000000..5bae1f2
+--- /dev/null
++++ b/npc/custom/events/worldboss.txt
+@@ -0,0 +1,451 @@
++/*
++CREATE TABLE IF NOT EXISTS worldboss (
++  account_id int(11) NOT NULL,
++  char_id int(11) NOT NULL,
++  name varchar(23) NOT NULL,
++  kills int(11) NOT NULL DEFAULT '0',
++  damage int(11) NOT NULL DEFAULT '0',
++  PRIMARY KEY (account_id)
++) ENGINE=InnoDB DEFAULT CHARSET=latin1;
++*/
++
++-	script	worldboss#yumi	-1,{
++
++OnEventReady:
++	$WBID=143;
++	query_sql("TRUNCATE worldboss");
++	.wave = 1;
++	.MapID = rand(getarraysize(.EventMap$));
++	announce "Valfreyja : Citizens of midgard! An abnormality has been detected at "+.EventMap$[.MapID]+"!",bc_all;
++	sleep 10000;
++	announce "Valfreyja : This is a crisis that will lead to destruction and sorrow to the townspeople nearby!.",bc_all;
++	sleep 10000;
++	announce "Valfreyja : As the goddess of this world, I am asking for you cooperation to solve this crisis!.",bc_all;
++	sleep 10000;
++	announce "Valfreyja : The estimated time before the said abnormality, the \"flood\" will emerge in 5 Minutes time!.",bc_all;
++	sleep 30000;	//1 Minute passed
++	announce "Valfreyja : I won't leave things unrewarded for helping to solve the crisis! Join the fight!.",bc_all;
++	sleep 20000;
++	announce "Valfreyja : Rewards will be based on your participation!.",bc_all;
++	sleep 20000;
++	announce "Valfreyja : The more damage you dealt to the boss will give you plenty rewards! same as killing more enemies!.",bc_all;
++	sleep 20000;	//2 Minutes passed
++	announce "Valfreyja : There's 3 more minutes left before it begins! Prepare as fast as you can!.",bc_all;
++	sleep 30000;	
++	announce "Valfreyja : Join the others and help solve the crisis at "+.EventMap$[.MapID]+"!",bc_all;
++	sleep 30000;	//3 Minutes passed
++	announce "Valfreyja : 2 Minutes left until the flood waves start!.",bc_all;
++	sleep 30000;
++	announce "Valfreyja : There are currently "+getmapusers(.EventMap$[.MapID])+" prepared adventurers!.",bc_all;
++	sleep 30000;	//4 Minutes passed
++	announce "Valfreyja : 1 Minute! Please help defend "+.EventMap$[.MapID]+" from the \"flood\".",bc_all;
++	sleep 40000;
++	announce "Valfreyja : 20 Seconds left.",bc_all;
++	sleep 15000;
++	announce "Valfreyja : 5 Seconds left.",bc_all;
++	sleep 2000;
++	announce "Valfreyja : \"Flood\" will emerge in 3.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : 2.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : 1.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : Good Luck and Bless all participants! wave "+.wave+" is coming!.",bc_all;
++	callsub OnSlavesSpawn,.wave;
++end;
++
++OnPreludeSlave:
++	announce "Valfreyja : Good job on repelling wave "+(.wave-1)+"!.",bc_all;
++	sleep 5000;
++	announce "Valfreyja : The next wave will arrive in roughly 10 seconds.",bc_all;
++	sleep 7000;
++	announce "Valfreyja : Next wave in 3.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : 2.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : 1.",bc_all;
++	sleep 1000;	
++	announce "Valfreyja : Good Luck and Bless all participants! wave "+.wave+" is coming!.",bc_all;
++return;
++
++OnSlavesSpawn:
++	if(.WaveSlaves$[.wave]=="")
++		callsub OnWorldBossSpawn;
++	.Slaves = 0;
++	explode(.@mobs$,.WaveSlaves$[.wave],",");
++	for(.@i=0;.@i<getarraysize(.@mobs$);.@i+=2){
++		monster .EventMap$[.MapID],0,0,"[Slave]"+strmobinfo(1,atoi(.@mobs$[.@i])),atoi(.@mobs$[.@i]),atoi(.@mobs$[.@i+1]),strnpcinfo(0)+"::OnSlaveDead";
++		.Slaves += atoi(.@mobs$[.@i+1]);
++	}
++end;
++
++OnSlaveDead:
++	.Slaves--;
++	if(isloggedin(killerrid))
++		query_sql("INSERT INTO `worldboss` (account_id,char_id,name,kills) VALUES ("+getcharid(3)+","+getcharid(0)+",'"+strcharinfo(0)+"',1) ON DUPLICATE KEY UPDATE kills=kills+1,name='"+strcharinfo(0)+"';");
++	if(.Slaves%5 == 0 && .Slaves >=5)
++		announce "Valfreyja : "+.Slaves+" Monsters Left.",bc_all;
++	if(.Slaves < 5 && .Slaves > 0)
++		announce "Valfreyja : "+.Slaves+" Monster"+((.Slaves==1)?"":"s")+" Left.",bc_all;
++	if(.Slaves==0)
++		if(.WaveSlaves$[++.wave]!=""){
++			callsub OnPreludeSlave;
++			callsub OnSlavesSpawn,.wave;
++		}else{
++			callsub OnPreludeBoss;
++			callsub OnWorldBossSpawn;
++		}
++end;
++
++OnPreludeBoss:
++	announce "Valfreyja : Wow! That was the last wave of small time monsters!.",bc_all;
++	sleep 5000;
++	announce "Valfreyja : The next one will be the boss now, Prepare for battle!.",bc_all;
++	sleep 5000;
++	announce "Valfreyja : You will be rewarded base on how much damage you dealt.",bc_all;
++	sleep 5000;
++	announce "Valfreyja : This is no ordinary boss as it has a very immense power than other bosses.",bc_all;
++	sleep 5000;
++	announce "Valfreyja : Anyway, The Boss is coming now! On your positions!.",bc_all;
++	sleep 5000;	
++	announce "Valfreyja : 3.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : 2.",bc_all;
++	sleep 1000;
++	announce "Valfreyja : 1.",bc_all;
++	sleep 1000;	
++	announce "Valfreyja : Good Luck and Bless all of you!.",bc_all;
++return;
++
++OnWorldBossSpawn:
++	deletearray $@damage_cid;
++	.@BossID = rand(getarraysize(.WorldBossID));
++    if (.HP_Bar == 0) .HP_Bar = 1;
++	monster .EventMap$[.MapID],.BossSpawnX[.MapID],.BossSpawnY[.MapID],"[BOSS]"+strmobinfo(1,.WorldBossID[.@BossID]),.WorldBossID[.@BossID],1,strnpcinfo(0)+"::OnWorldBossDead",2;
++    .boss = $@mobid[0];
++    donpcevent strnpcinfo(0)+"::OnHPBar";
++end;
++
++OnHPBar:
++    getunitdata .boss,.@boss;
++    .U_MAXHP = .@boss[3];
++    while (.HP_Bar != 0)
++    {
++        getunitdata .boss,.@boss;
++        .U_HP = .@boss[2];
++        .P_HP = (.U_HP*100)/.U_MAXHP;
++
++        .@num = getmapunits(BL_PC,.EventMap$[.MapID],.@rid[0]);
++        freeloop(1);	// for if the list was too big.
++        for(.@i=0;.@i<getarraysize(.@rid);.@i++){
++            attachrid(.@rid[.@i]);
++            cutin(""+.P_HP+"", 1);
++        }
++        freeloop(0);
++        
++        sleep2 100;
++    }
++    freeloop(1);	// for if the list was too big.
++    for(.@i=0;.@i<getarraysize(.@rid);.@i++){
++        attachrid(.@rid[.@i]);
++        cutin("0", 1);
++    }
++    freeloop(0);
++    sleep2 3000; //Delay to hide HP Bar
++    freeloop(1);	// for if the list was too big.
++    for(.@i=0;.@i<getarraysize(.@rid);.@i++){
++        attachrid(.@rid[.@i]);
++        cutin("", 255);
++    }
++    freeloop(0);
++    end;
++
++OnWorldBossDead:
++	set $WBID,gettimetick(2);
++	.@name$ = strcharinfo(0);
++    .HP_Bar = 0;
++	freeloop(1);
++	for(.@i=0;.@i<getarraysize(.LastHitReward);.@i+=2)
++		getitem .LastHitReward[.@i],.LastHitReward[.@i+1];
++	for(.@i=0; .@i<getarraysize(.ScatteredItems); .@i+=2){
++		for(.@j=0;.@j<.ScatteredItems[.@i+1];.@j++){
++			do {
++				.@x = rand(0,.MapMaxX[.MapID]);
++				.@y = rand(0,.MapMaxY[.MapID]);
++			} while (!checkcell(.EventMap$[.MapID],.@x,.@y,cell_chkpass));
++			makeitem .ScatteredItems[.@i],1,"this",.@x,.@y;
++		}
++	}
++	if(killedrid)
++		for(.@i=0;.@i<getarraysize($@damage_done);.@i++)
++			query_sql("INSERT INTO `worldboss` (account_id,char_id,name,damage) SELECT account_id,'"+$@damage_cid[.@i]+"',name,'"+$@damage_done[.@i]+"' FROM `char` WHERE `char`.`char_id`="+$@damage_cid[.@i]+" ON DUPLICATE KEY UPDATE damage = damage + "+$@damage_done[.@i]+"");
++	freeloop(0);
++	announce "Valfreyja : The Boss has been slain! Congratulations.",bc_all;
++	sleep 5000;
++	announce "Valfreyja : Brave "+.@name$+" has dealt the last damage!",bc_all;
++	sleep 5000;
++	.@top = query_sql("SELECT char_id,name,damage FROM worldboss ORDER BY damage DESC LIMIT 3",.@cid,.@name,.@dmg);
++	if(.@dmg[2]){
++		announce "Valfreyja : Ranking 3rd! Brave "+.@name[2]+" for dealing "+callfunc("F_InsertComma",.@dmg[2])+" damage to the boss !",bc_all; sleep 5000;}
++	if(.@dmg[1]){
++		announce "Valfreyja : Ranking 2nd! Brave "+.@name[1]+" for dealing "+callfunc("F_InsertComma",.@dmg[1])+" damage to the boss!",bc_all; sleep 5000;}
++	if(.@dmg[0]){
++		announce "Valfreyja : Lastly! Ranking 1st! Hero "+.@name[0]+" dealing a total damage of "+callfunc("F_InsertComma",.@dmg[0])+" to the boss !",bc_all; sleep 5000;}
++	callsub OnEventEnd;
++end;
++
++OnEventEnd:
++	announce "Valfreyja : The crisis has been solved.",bc_all;
++	sleep 10000;
++	announce "Valfreyja : I thank you all for helping to subjugate the flood at "+.EventMap$[.MapID]+".",bc_all;
++	sleep 10000;	
++	announce "Valfreyja : As my thanks, All participants subjugating the boss will be rewarded!.",bc_all;
++	sleep 10000;
++	getmapxy(.@map$,.@x,.@y,BL_NPC,$@WBREWARDGID$);
++	announce "Valfreyja : Please Proceed to my guardian at "+.@map$+" "+.@x+","+.@y+"!.",bc_all;
++	sleep 10000;
++	announce "Valfreyja : Once Again, Thank you for helping, I hope to see you adventurers at the next crisis!.",bc_all;
++end;
++
++OnInit:
++	//========Map Configuration=========//
++	setarray .EventMap$[0],"jupe_ele";		//Maps
++	setarray .MapMaxX[0],49;				//Map Max X coordinate(For scattering items)
++	setarray .MapMaxY[0],59;				//Map Max Y coordinate
++	setarray .BossSpawnX[0],41;				//World Boss Spawn Location X, 0 = Random
++	setarray .BossSpawnY[0],46;				//World Boss Spawn Location Y, 0 = Random
++	//==================================//
++	
++	//======Monster Configuration=======//
++	setarray .WaveSlaves$[1],		//(MobID,Amount)
++							"1272,2,1302,10,1200,5,1202,10,1191,20,1193,15",	//Wave 1 Slaves [Dark Lord, Dark Illusion, Zherlthish, Phendark, Mimic, Alarm]
++							"1373,2,1507,10,1370,10,1374,10,1379,20,1371,25",	//Wave 2 Slaves [Lord of Death, Bloody Murderer, Succubus, Incubus, Nightmare Terror, Fallen Angel]
++							"1832,2,1831,15,1833,15,1837,25,1383,30,1366,20";	//Wave 3 Slaves [Ifrit, Salamander, Kasa, Imp, Explosion, Lava Golem]
++	
++	setarray .WorldBossID[0],1399;	//Randomly Pick 1
++	setarray .ScatteredItems[0],501,5,502,5,503,5,504,10;
++	setarray .LastHitReward[0],969,10;	//Item ID, Amount{, Item ID, Amount}
++	//For Test Purpose
++	bindatcmd "worldboss",strnpcinfo(0)+"::OnEventReady",99,99;
++end;
++
++}
++
++jupe_ele,48,59,3	script	Valfreyja Guardian#WBREWARD	811,{
++
++	mes .name$;
++	mes "Good Day Fellow~";
++	mes "Goddess Freyja has sent me here to give rewards for the braves that help in solving flood crisis that happened a while ago.";
++	next;
++	switch(select("^00D323~Boss Damage Ranking^000000:^FF0000~Wave Kill Ranking^000000:^0000FF~Check Rewards^000000:~Information:~Goodbye!")){
++		case 1:
++			mes .name$;
++			mes "Here are the rankings";
++			mes "for dealing damage on";
++			mes "world boss.";
++			next;
++			callsub OnCheckRanking,1;
++			
++			break;
++		case 2:
++			mes .name$;
++			mes "Here are the rankings";
++			mes "for the amount of kills";
++			mes "during the flood.";
++			next;
++			callsub OnCheckRanking,0;
++			break;
++		case 3:
++			mes .name$;
++			mes "^00D323Boss Damage Ranking Rewards~^000000";
++			for(.@i=0;.@i<getarraysize(.BossRankRewards$);.@i++){
++				deletearray .@brwd$;
++				explode(.@brwd$,.BossRankRewards$[.@i],",");
++				mes "^FF0000Top "+(.@i+1)+" Rewards: ^000000";
++				for(.@j=0;.@j<getarraysize(.@brwd$);.@j+=2)
++					mes "->^0000FF"+atoi(.@brwd$[.@j+1])+"x "+getitemname(atoi(.@brwd$[.@j]))+"^000000";
++			}
++			mes "^FF0000Other Participants Rewards: ^000000";
++			for(.@i=0;.@i<getarraysize(.BossConsolation);.@i+=2)	
++				mes "->^0000FF"+.BossConsolation[.@i+1]+"x "+getitemname(.BossConsolation[.@i])+"^000000";
++			next;
++			mes .name$;
++			mes "^00D323Wave Kills Ranking Rewards~^000000";
++			for(.@i=0;.@i<getarraysize(.WaveRankRewards$);.@i++){
++				deletearray .@wrwd$;
++				explode(.@wrwd$,.WaveRankRewards$[.@i],",");
++				mes "^FF0000Top "+(.@i+1)+" Rewards: ^000000";
++				for(.@j=0;.@j<getarraysize(.@wrwd$);.@j+=2)
++					mes "->^0000FF"+atoi(.@wrwd$[.@j+1])+"x "+getitemname(atoi(.@wrwd$[.@j]))+"^000000";
++			}
++			mes "^FF0000Other Participants Rewards: ^000000";
++			for(.@i=0;.@i<getarraysize(.WaveConsolation);.@i+=2)
++				mes "->^0000FF"+.WaveConsolation[.@i+1]+"x "+getitemname(.WaveConsolation[.@i])+"^000000";
++			next;
++			mes .name$;
++			mes "Are you here to receive some rewards?";
++			next;
++			switch(select("~Get Boss Damage Rewards:~Get Wave Kills Rewards:~Cancel")){
++				case 1:
++					if($WBID == 143){ mes .name$; mes "World Boss is currently ongoing.";  end; }
++					callsub OnGetBossRewards;
++					break;
++				case 2:
++					if($WBID == 143){ mes .name$; mes "World Boss is currently ongoing.";  end; }
++					callsub OnGetWaveRewards;
++					break;
++				case 3:
++					end;
++			}
++			break;
++		case 4:
++			mes .name$;
++			mes "FILL BY OWNER";
++			break;
++		case 5:
++			mes .name$;
++			mes "Alright~";
++			mes "I'm hoping to see you once again soon.";
++			mes "good luck on your adventures.";
++			break;
++	}
++end;
++
++OnCheckRanking:	//Checking the Ranking (DONE)
++	if(getarg(0))
++		.@ranking = query_sql("SELECT char_id,name,damage FROM worldboss WHERE damage !=0 ORDER BY damage DESC Limit 30",.@cid,.@name$,.@damage);
++	else
++		.@ranking = query_sql("SELECT char_id,name,kills FROM worldboss WHERE kills !=0 ORDER BY kills DESC Limit 30",.@cid,.@name$,.@kills);
++	mes .name$;
++	if(!.@cid[0]){mes "I'm sorry but there's no one in the ranking right now"; end;}
++	mes "^0000FFRank^000000 - "+(getarg(0)?"^00D323Damage Done^000000":"^FF0000Monster Kills^000000");
++	for(.@i=0;.@i<getarraysize(.@cid);.@i++){
++		if(.@i%10==0 && .@i!=0){ next; mes .name$; mes "^0000FFRank^000000 - "+(getarg(0)?"^00D323Damage Done^000000":"^FF0000Monster Kills^000000");}
++		mes (.@i+1)+". ^0000FF"+.@name$[.@i]+"^000000 - "+(getarg(0)? "^00D323"+callfunc("F_InsertComma",.@damage[.@i])+"^000000":"^FF0000"+.@kills[.@i])+"^000000";
++	}
++return;
++
++OnGetBossRewards:
++	if($WBID==#BossReward){
++		mes .name$;
++		mes "You already receive your boss reward, Please don't be greedy~";
++		end;
++	}
++	.@idx = callsub(OnCheckReward,1);	//Check if Player on rank
++	//IF TRUE = DO BELOW
++	if(.BossRankRewards$[.@idx]!=""){	//Item Reward
++		explode(.@rwd$,.BossRankRewards$[.@idx],",");
++		for(.@i=0;.@i<getarraysize(.@rwd$);.@i+=2)
++			getitem atoi(.@rwd$[.@i]),atoi(.@rwd$[.@i+1]);
++	}
++	else
++		for(.@i=0;.@i<getarraysize(.BossConsolation);.@i+=2)
++			getitem .BossConsolation[.@i],.BossConsolation[.@i+1];
++	callsub OnPercentageReward;	//Point Reward
++	callsub OnRewardSuccess,1;
++return;
++
++OnPercentageReward:
++	query_sql("SELECT ROUND(((SELECT damage FROM worldboss WHERE account_id="+getcharid(3)+") * 100.0 / (SELECT SUM(damage) FROM worldboss)*"+.pointReward+"/100),3) As Points, ROUND(((SELECT damage FROM worldboss WHERE account_id="+getcharid(3)+") * 100.0 / (SELECT SUM(damage) FROM worldboss)*"+.BaseExpReward+"/100),3) As BaseExp, ROUND(((SELECT damage FROM worldboss WHERE account_id="+getcharid(3)+") * 100.0 / (SELECT SUM(damage) FROM worldboss)*"+.JobExpReward+"/100),3) As JobExp",.@points,.@baseExp,.@jobExp);
++	if(.@points > .pointMax)
++		set .@pointReward,.pointMax;
++	else
++		set .@pointReward,.@points;
++	setd .pointVariable$,getd(.pointVariable$)+.@pointReward;
++	dispbottom "You receive "+.@pointReward+" "+.pointName$+".";
++	getexp .@baseExp,.@jobExp;	//Exp Reward
++	dispbottom "You received "+.@baseExp+" base experience and "+.@jobExp+" job experience.";
++return;
++
++OnGetWaveRewards:	//Wave Ranking Rewards (DONE)
++	if($WBID==#WaveReward){
++		mes .name$;
++		mes "You already receive your wave reward, Please don't be greedy~";
++		end;
++	}
++	.@idx = callsub(OnCheckReward,0);	//Check if Player on rank
++	if(.WaveRankRewards$[.@idx]!=""){	//Item Reward
++		explode(.@rwd$,.WaveRankRewards$[.@idx],",");
++		for(.@i=0;.@i<getarraysize(.@rwd$);.@i+=2)
++			getitem atoi(.@rwd$[.@i]),atoi(.@rwd$[.@i+1]);
++	}
++	else
++		for(.@i=0;.@i<getarraysize(.WaveConsolation);.@i+=2)
++			getitem .WaveConsolation[.@i],.WaveConsolation[.@i+1];
++	callsub OnRewardSuccess,0;
++return;
++
++OnCheckReward:
++	freeloop(1);
++	if(getarg(0))
++		.@rank = query_sql("SELECT char_id FROM worldboss WHERE damage !=0 ORDER BY damage DESC",.@cid);
++	else
++		.@rank = query_sql("SELECT char_id FROM worldboss WHERE kills !=0 ORDER BY kills DESC",.@cid);
++	freeloop(0);
++	.@idx = inarray(.@cid,getcharid(0));
++	if(.@idx>=0)
++		return .@idx;
++	mes .name$;
++	mes "Sorry, but it seems like you are not qualified to receive a reward.";
++end;
++
++OnRewardSuccess:
++	if(getarg(0)) set #BossReward,$WBID;
++	else set #WaveReward,$WBID;
++	mes .name$;
++	mes "Here's your rewards!";
++	mes "Thank you for helping the flood crisis";
++end;
++
++OnNPCKillEvent:
++    if(getmonsterinfo(killedrid,MOB_MVPEXP)){
++        $worldboss++;
++        if($worldboss == .bossEvent){
++            donpcevent "worldboss#yumi::OnEventReady";
++            $worldboss = 0;
++        }
++        delwaitingroom;
++        waitingroom "MVPs killed "+$worldboss+"/"+.bossEvent,0;
++    }
++    end;
++
++OnInit:
++	//========START OF WAVE REWARDS CONFIGURATION=========//
++	setarray .WaveRankRewards$[0],		//Individual Rewards for Top 3 Player
++							"501,10,502,10",	//TOP 1
++							"503,5,504,5",	//TOP 2
++							"505,1,506,1";	//TOP 3
++							//""			//FOR TOP 4, ADD MORE TO YOUR LIKING
++	setarray .WaveConsolation[0],501,1,502,1;//FOR PLAYERS NOT IN TOP
++	//=========END OF WAVE REWARDS CONFIGURATION==========//
++	
++	//========START OF BOSS REWARDS CONFIGURATION=========//
++	setarray .BossRankRewards$[0],		//Individual Rewards for Top 3 Player
++							"506,10,505,10",	//TOP 1
++							"504,5,503,5",	//TOP 2
++							"502,1,501,1";	//TOP 3
++							//""			//FOR TOP 4, ADD MORE TO YOUR LIKING
++							
++	setarray .BossConsolation[0],512,10;//FOR PLAYERS NOT IN TOP
++	//==========POINTS REWARD
++	set .pointVariable$,"#CASHPOINTS";
++	set .pointName$,"Cash Points";
++	set .pointReward,1000;	// Whole Reward that will be distributed based on boss damage by percentage %	(Must be 100 Above)
++	set .pointMax,250;	//Max Reward for players(To prevent taking all the Point Reward)
++	
++	//==========ETC Rewards
++	set .BaseExpReward,2000000000;	// For Experience Reward based on Damage by percentage(Max of 2.1B Experience)
++	set .JobExpReward,1000000000;
++	
++	//=========END OF BOSS REWARDS CONFIGURATION=========//
++	
++	//DO NOT TOUCH
++	set .name$,"[ Lenneth ]";
++	set $@WBREWARDGID$,strnpcinfo(0);
++
++    // MVP kills required to spwan world boss event;
++    set .bossEvent,10;
++
++    waitingroom "MVPs killed "+$worldboss+"/"+.bossEvent,0;
++end;
++}
+\ No newline at end of file
+diff --git a/npc/scripts_custom.conf b/npc/scripts_custom.conf
+index 49f9091..20bf108 100644
+--- a/npc/scripts_custom.conf
++++ b/npc/scripts_custom.conf
+@@ -88,6 +88,7 @@ npc: npc/custom/monstro_campeao.txt
+ //npc: npc/custom/events/disguise.txt
+ //npc: npc/custom/events/mushroom_event.txt
+ //npc: npc/custom/events/mvp_ladder.txt
++npc: npc/custom/events/worldboss.txt
+ // -- Holiday Events
+ //npc: npc/custom/events/holiday/xmas_rings_event.txt
+ //npc: npc/custom/events/holiday/valentinesdayexp.txt
