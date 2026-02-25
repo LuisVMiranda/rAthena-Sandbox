@@ -9956,3 +9956,6 @@ Body:
       NoDispell: true
       NoBanishingBuster: true
       NoClearance: true
+  - Status: Friendlyfire
+    Flags:
+      NoClearbuff: true

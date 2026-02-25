@@ -335,6 +335,12 @@ struct s_vanish_bonus {
 	int32 flag;
 };
 
+struct s_friendlyfire_bonus {
+	int16 rate; ///< Success rate in 1/100%
+	uint32 duration; ///< SC_FRIENDLYFIRE duration in milliseconds
+	int32 flag; ///< Trigger battle flags (BF_*)
+};
+
 /// AutoBonus bonus struct
 struct s_autobonus {
 	int16 rate;
@@ -613,6 +619,7 @@ public:
 	std::vector<s_add_drop> add_drop;
 	std::vector<s_addele2> subele2;
 	std::vector<s_vanish_bonus> sp_vanish, hp_vanish;
+	std::vector<s_friendlyfire_bonus> friendly_fire;
 	std::vector<s_addrace2> subrace3;
 	std::vector<std::shared_ptr<s_autobonus>> autobonus, autobonus2, autobonus3; //Auto script on attack, when attacked, on skill usage
 

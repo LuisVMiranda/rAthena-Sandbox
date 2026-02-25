@@ -5183,6 +5183,32 @@ void pc_bonus3(map_session_data *sd,int32 type,int32 type2,int32 type3,int32 val
 			pc_bonus_addeff_onskill(sd->addeff_onskill, (sc_type)type3, val, type2, ATF_TARGET, 0);
 		break;
 
+	case SP_FRIENDLY_FIRE: // bonus3 bFriendlyFire,x,t,bf;
+		if( sd->state.lr_flag == LR_FLAG_ARROW )
+			break;
+
+		if( type2 <= 0 || type3 <= 0 || val <= 0 )
+			break;
+
+		if( !(val & BF_RANGEMASK) )
+			val |= BF_SHORT | BF_LONG;
+		if( !(val & BF_WEAPONMASK) )
+			val |= BF_WEAPON;
+		if( !(val & BF_SKILLMASK) ) {
+			if( val & (BF_MAGIC | BF_MISC) )
+				val |= BF_SKILL;
+			if( val & BF_WEAPON )
+				val |= BF_NORMAL | BF_SKILL;
+		}
+
+		if( sd->friendly_fire.size() == MAX_PC_BONUS ) {
+			ShowWarning("pc_bonus3: SP_FRIENDLY_FIRE: Reached max (%d) number of friendly fire bonuses per character!\n", MAX_PC_BONUS);
+			break;
+		}
+
+		sd->friendly_fire.push_back({ static_cast<int16>(type2), static_cast<uint32>(type3), val });
+		break;
+
 	case SP_ADDELE: // bonus3 bAddEle,e,x,bf;
 		PC_BONUS_CHK_ELEMENT(type2,SP_ADDELE);
 		if (sd->state.lr_flag != LR_FLAG_ARROW)

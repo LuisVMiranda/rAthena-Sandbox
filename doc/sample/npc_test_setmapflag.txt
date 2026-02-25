@@ -12,7 +12,7 @@ prontera,165,145,0	script	EXPflagtest	123,{
 	mes "[EXPflagtest]";
 	mes "Set up the map rates:";
 	next;
-	switch(select("Job EXP:Base EXP:PVP on:Reset all flags")) {
+	switch(select("Job EXP:Base EXP:PVP on:Friendly Fire on:Reset all flags")) {
 	case 1:
 		input .@rate;
 		setmapflag "prontera",mf_jexp,.@rate;
@@ -25,9 +25,13 @@ prontera,165,145,0	script	EXPflagtest	123,{
 		setmapflag "prontera",mf_pvp;
 		close;
 	case 4:
+		setmapflag "prontera",mf_friendly_fire;
+		close;
+	case 5:
 		removemapflag "prontera",mf_bexp;
 		removemapflag "prontera",mf_jexp;
 		removemapflag "prontera",mf_pvp;
+		removemapflag "prontera",mf_friendly_fire;
 		close;
 	}
 }

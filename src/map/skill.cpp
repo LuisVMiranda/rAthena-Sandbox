@@ -1295,6 +1295,16 @@ int32 skill_additional_effect( block_list* src, block_list *bl, uint16 skill_id,
 				if (it.flag&ATF_SELF)
 					status_change_start(src, src, it.sc, rate, 7, 0, 0, 0, it.duration, SCSTART_NONE, 100);
 			}
+
+			for (const auto &it : sd->friendly_fire) {
+				if( !it.rate )
+					continue;
+
+				if( !(it.flag & attack_type) )
+					continue;
+
+				status_change_start(src, src, SC_FRIENDLYFIRE, it.rate, 7, 0, 0, 0, it.duration, SCSTART_NONE, 100);
+			}
 		}
 
 		// Enchanting Shadow gives a chance to inflict Shadow Wounds to the enemy.

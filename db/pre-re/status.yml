@@ -6849,3 +6849,7 @@ Body:
       StopAttacking: true
       StopCasting: true
       BossResist: true
+
+  - Status: Friendlyfire
+    Flags:
+      NoClearbuff: true
