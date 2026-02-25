@@ -1445,6 +1445,7 @@ enum sc_type : int16 {
 	SC_WATER_CHARM_POWER,
 	SC_WIND_CHARM_POWER,
 	SC_GROUND_CHARM_POWER,
+	SC_FRIENDLYFIRE,
 
 	SC_MAX, //Automatically updated max, used in for's to check we are within bounds.
 };
@@ -2940,6 +2941,7 @@ enum efst_type : int16{
 	EFST_WATER_CHARM_POWER,
 	EFST_WIND_CHARM_POWER,
 	EFST_GROUND_CHARM_POWER,
+	EFST_FRIENDLYFIRE,
 	EFST_OVERCOMING_CRISIS,	//1671
 
 	EFST_BLOCK = 1688,

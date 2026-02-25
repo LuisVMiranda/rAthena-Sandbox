@@ -9956,3 +9956,7 @@ Body:
       NoDispell: true
       NoBanishingBuster: true
       NoClearance: true
+  - Status: Friendlyfire
+    Icon: EFST_FRIENDLYFIRE
+    Flags:
+      NoClearbuff: true

@@ -1,34 +1,213 @@
+diff --git a/db/pre-re/status.yml b/db/pre-re/status.yml
+index f177ed4..a0f1901 100644
+--- a/db/pre-re/status.yml
++++ b/db/pre-re/status.yml
+@@ -6849,3 +6849,8 @@ Body:
+       StopAttacking: true
+       StopCasting: true
+       BossResist: true
++
++  - Status: Friendlyfire
++    Icon: EFST_FRIENDLYFIRE
++    Flags:
++      NoClearbuff: true
+diff --git a/db/re/status.yml b/db/re/status.yml
+index b87756b..75bf06c 100644
+--- a/db/re/status.yml
++++ b/db/re/status.yml
+@@ -9956,3 +9956,7 @@ Body:
+       NoDispell: true
+       NoBanishingBuster: true
+       NoClearance: true
++  - Status: Friendlyfire
++    Icon: EFST_FRIENDLYFIRE
++    Flags:
++      NoClearbuff: true
 diff --git a/doc/item_bonus.txt b/doc/item_bonus.txt
-index 539f090..02eeb2d 100644
+index ea68af4..4410cec 100644
 --- a/doc/item_bonus.txt
 +++ b/doc/item_bonus.txt
-@@ -356,6 +356,7 @@ bonus2 bResEff,eff,n;       		Adds a n/100% tolerance to status eff
- bonus3 bFriendlyFire,x,t,bf;		On attack, has x%% chance to apply SC_FRIENDLYFIRE for t milliseconds
- 						while matching trigger criteria bf (offensive skills can target allies while active)
- 						bf supports BF_SHORT, BF_LONG, BF_WEAPON, BF_MAGIC, BF_MISC, BF_NORMAL, BF_SKILL.
-+						If bf omits range/skill masks, defaults are auto-completed (same behavior as other BF bonuses).
- 					DIFF requirement: `Codex diffs/friendly_fire_system/bfriendlyfire_bonus.diff`
+@@ -345,6 +345,10 @@ bonus2 bAddEff,eff,n;       		Adds a n/100% chance to cause status eff on the ta
+ bonus2 bAddEff2,eff,n;      		Adds a n/100% chance to cause status eff on self when attacking
+ bonus2 bAddEffWhenHit,eff,n;		Adds a n/100% chance to cause status eff on the enemy when being hit by physical damage
+ bonus2 bResEff,eff,n;       		Adds a n/100% tolerance to status eff
++bonus3 bFriendlyFire,x,t,bf;		On attack, has x/100% chance to apply SC_FRIENDLYFIRE for t milliseconds
++					while matching trigger criteria bf (offensive skills can target allies while active).
++					bf supports BF_SHORT, BF_LONG, BF_WEAPON, BF_MAGIC, BF_MISC, BF_NORMAL, BF_SKILL.
++					If bf omits range/skill masks, defaults are auto-completed.
  
  bonus3 bAddEff,eff,n,atf;       		Adds a n/100% chance to cause status eff on the target when attacking
+ bonus4 bAddEff,eff,n,atf,t;     		Adds a n/100% chance to cause status eff for t milliseconds on the target when attacking
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index d32f752..6949b4a 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -589,7 +589,8 @@ enum _sp {
+ 	SP_MAGIC_SUBDEF_ELE, SP_REDUCE_DAMAGE_RETURN, SP_ADD_ITEM_SPHEAL_RATE, SP_ADD_ITEMGROUP_SPHEAL_RATE, // 2098-2101
+ 	SP_WEAPON_SUBSIZE, SP_ABSORB_DMG_MAXHP2, // 2102-2103
+ 	SP_SP_IGNORE_RES_RACE_RATE, SP_SP_IGNORE_MRES_RACE_RATE, SP_EMATK_HIDDEN, SP_SKILL_RATIO, // 2104-2107
+-	SP_NON_CRIT_ATK_RATE //2108
++	SP_NON_CRIT_ATK_RATE, //2108
++	SP_FRIENDLY_FIRE //2109
+ };
+ 
+ enum _look {
+@@ -695,6 +696,7 @@ enum e_mapflag : int16 {
+ 	MF_SPECIALPOPUP,
+ 	MF_NOMACROCHECKER,
+ 	MF_INVINCIBLE_TIME,
++	MF_FRIENDLY_FIRE,
+ 	MF_MAX
+ };
+ 
 diff --git a/src/map/pc.cpp b/src/map/pc.cpp
-index dffb5bd..78fded7 100644
+index 29bde3e..7900a68 100644
 --- a/src/map/pc.cpp
 +++ b/src/map/pc.cpp
-@@ -5304,6 +5304,17 @@ void pc_bonus3(map_session_data *sd,int32 type,int32 type2,int32 type3,int32 val
- 		if( type2 <= 0 || type3 <= 0 || val <= 0 )
- 			break;
+@@ -5183,6 +5183,32 @@ void pc_bonus3(map_session_data *sd,int32 type,int32 type2,int32 type3,int32 val
+ 			pc_bonus_addeff_onskill(sd->addeff_onskill, (sc_type)type3, val, type2, ATF_TARGET, 0);
+ 		break;
  
++	case SP_FRIENDLY_FIRE: // bonus3 bFriendlyFire,x,t,bf;
++		if( sd->state.lr_flag == LR_FLAG_ARROW )
++			break;
++
++		if( type2 <= 0 || type3 <= 0 || val <= 0 )
++			break;
++
 +		if( !(val & BF_RANGEMASK) )
-+			val |= BF_SHORT | BF_LONG; // No range specified? Allow both.
++			val |= BF_SHORT | BF_LONG;
 +		if( !(val & BF_WEAPONMASK) )
-+			val |= BF_WEAPON; // No attack type specified? Default to weapon attacks.
++			val |= BF_WEAPON;
 +		if( !(val & BF_SKILLMASK) ) {
 +			if( val & (BF_MAGIC | BF_MISC) )
-+				val |= BF_SKILL; // Magic/misc always come from skill path.
++				val |= BF_SKILL;
 +			if( val & BF_WEAPON )
-+				val |= BF_NORMAL | BF_SKILL; // Weapon can be normal or skill-based.
++				val |= BF_NORMAL | BF_SKILL;
 +		}
 +
- 		if( sd->friendly_fire.size() == MAX_PC_BONUS ){
- 			ShowWarning( "pc_bonus3: SP_FRIENDLY_FIRE: Reached max (%d) number of friendly fire bonuses per character!\n", MAX_PC_BONUS );
- 			break;
++		if( sd->friendly_fire.size() == MAX_PC_BONUS ) {
++			ShowWarning("pc_bonus3: SP_FRIENDLY_FIRE: Reached max (%d) number of friendly fire bonuses per character!\n", MAX_PC_BONUS);
++			break;
++		}
++
++		sd->friendly_fire.push_back({ static_cast<int16>(type2), static_cast<uint32>(type3), val });
++		break;
++
+ 	case SP_ADDELE: // bonus3 bAddEle,e,x,bf;
+ 		PC_BONUS_CHK_ELEMENT(type2,SP_ADDELE);
+ 		if (sd->state.lr_flag != LR_FLAG_ARROW)
+diff --git a/src/map/pc.hpp b/src/map/pc.hpp
+index 6f96f97..65d81f8 100644
+--- a/src/map/pc.hpp
++++ b/src/map/pc.hpp
+@@ -335,6 +335,12 @@ struct s_vanish_bonus {
+ 	int32 flag;
+ };
+ 
++struct s_friendlyfire_bonus {
++	int16 rate; ///< Success rate in 1/100%
++	uint32 duration; ///< SC_FRIENDLYFIRE duration in milliseconds
++	int32 flag; ///< Trigger battle flags (BF_*)
++};
++
+ /// AutoBonus bonus struct
+ struct s_autobonus {
+ 	int16 rate;
+@@ -613,6 +619,7 @@ public:
+ 	std::vector<s_add_drop> add_drop;
+ 	std::vector<s_addele2> subele2;
+ 	std::vector<s_vanish_bonus> sp_vanish, hp_vanish;
++	std::vector<s_friendlyfire_bonus> friendly_fire;
+ 	std::vector<s_addrace2> subrace3;
+ 	std::vector<std::shared_ptr<s_autobonus>> autobonus, autobonus2, autobonus3; //Auto script on attack, when attacked, on skill usage
+ 
+diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
+index b2d500d..34f91f7 100644
+--- a/src/map/script_constants.hpp
++++ b/src/map/script_constants.hpp
+@@ -536,6 +536,7 @@
+ 	export_constant(MF_SPECIALPOPUP);
+ 	export_constant(MF_NOMACROCHECKER);
+ 	export_constant(MF_INVINCIBLE_TIME);
++	export_constant(MF_FRIENDLY_FIRE);
+ 
+ 	/* setcell types */
+ 	export_constant(CELL_WALKABLE);
+@@ -857,6 +858,7 @@
+ 	export_constant2("bAddItemGroupSPHealRate", SP_ADD_ITEMGROUP_SPHEAL_RATE);
+ 	export_constant2("bWeaponSubSize", SP_WEAPON_SUBSIZE);
+ 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
++	export_constant2("bFriendlyFire", SP_FRIENDLY_FIRE);
+ 
+ 	/* equip indices */
+ 	export_constant(EQI_COMPOUND_ON);
+@@ -2004,6 +2006,7 @@
+ 	export_constant(SC_WATER_CHARM_POWER);
+ 	export_constant(SC_WIND_CHARM_POWER);
+ 	export_constant(SC_GROUND_CHARM_POWER);
++	export_constant(SC_FRIENDLYFIRE);
+ 
+ /// Do not modify code below this, until the end of the API hook, since it will be automatically generated again
+ /// @APIHOOK_START(EFST_CONST)
+@@ -3461,6 +3464,7 @@
+ 	export_constant(EFST_WATER_CHARM_POWER);
+ 	export_constant(EFST_WIND_CHARM_POWER);
+ 	export_constant(EFST_GROUND_CHARM_POWER);
++	export_constant(EFST_FRIENDLYFIRE);
+ 	export_constant(EFST_OVERCOMING_CRISIS);
+ 	export_constant(EFST_CONTENTS_36);
+ 	export_constant(EFST_CONTENTS_37);
+diff --git a/src/map/skill.cpp b/src/map/skill.cpp
+index 8ba877d..da3c47b 100644
+--- a/src/map/skill.cpp
++++ b/src/map/skill.cpp
+@@ -1295,6 +1295,16 @@ int32 skill_additional_effect( block_list* src, block_list *bl, uint16 skill_id,
+ 				if (it.flag&ATF_SELF)
+ 					status_change_start(src, src, it.sc, rate, 7, 0, 0, 0, it.duration, SCSTART_NONE, 100);
+ 			}
++
++			for (const auto &it : sd->friendly_fire) {
++				if( !it.rate )
++					continue;
++
++				if( !(it.flag & attack_type) )
++					continue;
++
++				status_change_start(src, src, SC_FRIENDLYFIRE, it.rate, 7, 0, 0, 0, it.duration, SCSTART_NONE, 100);
++			}
+ 		}
+ 
+ 		// Enchanting Shadow gives a chance to inflict Shadow Wounds to the enemy.
+diff --git a/src/map/status.cpp b/src/map/status.cpp
+index 8b0a584..da27505 100644
+--- a/src/map/status.cpp
++++ b/src/map/status.cpp
+@@ -3870,6 +3870,7 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
+ 	sd->skilldelay.clear();
+ 	sd->sp_vanish.clear();
+ 	sd->hp_vanish.clear();
++	sd->friendly_fire.clear();
+ 	sd->itemsphealrate.clear();
+ 	sd->itemgroupsphealrate.clear();
+ 
+diff --git a/src/map/status.hpp b/src/map/status.hpp
+index ced87d1..3f3b910 100644
+--- a/src/map/status.hpp
++++ b/src/map/status.hpp
+@@ -1445,6 +1445,7 @@ enum sc_type : int16 {
+ 	SC_WATER_CHARM_POWER,
+ 	SC_WIND_CHARM_POWER,
+ 	SC_GROUND_CHARM_POWER,
++	SC_FRIENDLYFIRE,
+ 
+ 	SC_MAX, //Automatically updated max, used in for's to check we are within bounds.
+ };
+@@ -2940,6 +2941,7 @@ enum efst_type : int16{
+ 	EFST_WATER_CHARM_POWER,
+ 	EFST_WIND_CHARM_POWER,
+ 	EFST_GROUND_CHARM_POWER,
++	EFST_FRIENDLYFIRE,
+ 	EFST_OVERCOMING_CRISIS,	//1671
+ 
+ 	EFST_BLOCK = 1688,

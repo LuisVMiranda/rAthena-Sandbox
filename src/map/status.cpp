@@ -3870,6 +3870,7 @@ int32 status_calc_pc_sub(map_session_data* sd, uint8 opt)
 	sd->skilldelay.clear();
 	sd->sp_vanish.clear();
 	sd->hp_vanish.clear();
+	sd->friendly_fire.clear();
 	sd->itemsphealrate.clear();
 	sd->itemgroupsphealrate.clear();
 

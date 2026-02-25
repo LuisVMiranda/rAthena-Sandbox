@@ -536,6 +536,7 @@
 	export_constant(MF_SPECIALPOPUP);
 	export_constant(MF_NOMACROCHECKER);
 	export_constant(MF_INVINCIBLE_TIME);
+	export_constant(MF_FRIENDLY_FIRE);
 
 	/* setcell types */
 	export_constant(CELL_WALKABLE);
@@ -857,6 +858,7 @@
 	export_constant2("bAddItemGroupSPHealRate", SP_ADD_ITEMGROUP_SPHEAL_RATE);
 	export_constant2("bWeaponSubSize", SP_WEAPON_SUBSIZE);
 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
+	export_constant2("bFriendlyFire", SP_FRIENDLY_FIRE);
 
 	/* equip indices */
 	export_constant(EQI_COMPOUND_ON);
@@ -2004,6 +2006,7 @@
 	export_constant(SC_WATER_CHARM_POWER);
 	export_constant(SC_WIND_CHARM_POWER);
 	export_constant(SC_GROUND_CHARM_POWER);
+	export_constant(SC_FRIENDLYFIRE);
 
 /// Do not modify code below this, until the end of the API hook, since it will be automatically generated again
 /// @APIHOOK_START(EFST_CONST)
@@ -3461,6 +3464,7 @@
 	export_constant(EFST_WATER_CHARM_POWER);
 	export_constant(EFST_WIND_CHARM_POWER);
 	export_constant(EFST_GROUND_CHARM_POWER);
+	export_constant(EFST_FRIENDLYFIRE);
 	export_constant(EFST_OVERCOMING_CRISIS);
 	export_constant(EFST_CONTENTS_36);
 	export_constant(EFST_CONTENTS_37);
