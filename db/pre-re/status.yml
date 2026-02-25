@@ -6851,5 +6851,6 @@ Body:
       BossResist: true
 
   - Status: Friendlyfire
+    Icon: EFST_FRIENDLYFIRE
     Flags:
       NoClearbuff: true
