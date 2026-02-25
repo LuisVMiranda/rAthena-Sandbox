@@ -537,6 +537,7 @@
 	export_constant(MF_NOMACROCHECKER);
 	export_constant(MF_INVINCIBLE_TIME);
 	export_constant(MF_FRIENDLY_FIRE);
+	export_constant(MF_NO_MERCY);
 
 	/* setcell types */
 	export_constant(CELL_WALKABLE);

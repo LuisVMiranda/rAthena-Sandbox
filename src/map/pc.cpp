@@ -10799,6 +10799,11 @@ int32 pc_itemheal(map_session_data *sd, t_itemid itemid, int32 hp, int32 sp)
 			hp = 0;
 	}
 
+	if (map_getmapflag(sd->m, MF_NO_MERCY)) {
+		hp = hp * battle_config.feature_no_mercy_recover_rate / 100;
+		sp = sp * battle_config.feature_no_mercy_recover_rate / 100;
+	}
+
 	return status_heal(sd, hp, sp, 1);
 }
 

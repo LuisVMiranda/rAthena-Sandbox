@@ -770,7 +770,12 @@ int32 skill_calc_heal(block_list *src, block_list *target, uint16 skill_id, uint
 	// Is this the right place for this??? [Rytech]
 	if ( sd && status_get_hplus(src) > 0 && skill_id != SOA_TALISMAN_OF_PROTECTION)
 		hp += hp * status_get_hplus(src) / 100;
+#endif
 
+	if (heal && target != nullptr && map_getmapflag(target->m, MF_NO_MERCY))
+		hp = hp * battle_config.feature_no_mercy_recover_rate / 100;
+
+#ifdef RENEWAL
 	return (heal) ? max(1, hp) : hp;
 #else
 	return hp;
