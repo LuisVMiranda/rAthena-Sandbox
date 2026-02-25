@@ -1,20 +1,40 @@
+diff --git a/doc/mapflags.txt b/doc/mapflags.txt
+index ad72326..0790d98 100644
+--- a/doc/mapflags.txt
++++ b/doc/mapflags.txt
+@@ -489,3 +489,16 @@ Ignores config value of 'monster_hp_bars_info'.
+ Displays a special popup when a player enters the map. See script command "specialpopup" for details on different popup types.
+ 
+ ---------------------------------------
++
++---------------------------------------
++
++*friendly_fire
++
++Allows offensive skills to target allied party/guild members on this map.
++Normal alliance targeting is unchanged on maps without this mapflag.
++
++Example:
++
++prontera	mapflag	friendly_fire
++
++---------------------------------------
 diff --git a/src/map/battle.cpp b/src/map/battle.cpp
-index 3e39475..f141b40 100644
+index 37e0c9c..e0bf040 100644
 --- a/src/map/battle.cpp
 +++ b/src/map/battle.cpp
-@@ -9716,6 +9716,11 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
+@@ -8427,6 +8427,10 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
  
  	const map_data* mapdata = map_getmapdata(m);
  
-+	// Hook: enables offensive skill friendly fire either by mapflag or temporary status.
-+	const bool is_offensive_skill_check = ( flag & BCT_ENEMY ) && ( battle_getcurrentskill( src ) > 0 || src->type == BL_SKILL );
-+	const bool has_friendly_fire_status = s_bl->type == BL_PC && static_cast<const map_session_data*>( s_bl )->sc.hasSCE( SC_FRIENDLYFIRE );
-+	const bool force_friendly_fire = is_offensive_skill_check && ( mapdata->getMapFlag( MF_FRIENDLY_FIRE ) || has_friendly_fire_status );
++	const bool is_offensive_skill_check = (flag & BCT_ENEMY) && (battle_getcurrentskill(src) > 0 || src->type == BL_SKILL);
++	const bool has_friendly_fire_status = s_bl->type == BL_PC && static_cast<const map_session_data*>(s_bl)->sc.hasSCE(SC_FRIENDLYFIRE);
++	const bool force_friendly_fire = is_offensive_skill_check && (mapdata->getMapFlag(MF_FRIENDLY_FIRE) || has_friendly_fire_status);
 +
  	switch( target->type ) { // Checks on actual target
  		case BL_PC: {
  				const status_change* sc = status_get_sc(src);
-@@ -9958,18 +9963,32 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
+@@ -8669,18 +8673,30 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
  		if( flag&(BCT_PARTY|BCT_ENEMY) )
  		{
  			int32 s_party = status_get_party_id(s_bl);
@@ -25,12 +45,11 @@ index 3e39475..f141b40 100644
 +
 +			if( s_party && s_party == t_party && !(mapdata->getMapFlag(MF_PVP) && mapdata->getMapFlag(MF_PVP_NOPARTY)) && !(mapdata_flag_gvg(mapdata) && mapdata->getMapFlag(MF_GVG_NOPARTY)) && (!mapdata->getMapFlag(MF_BATTLEGROUND) || sbg_id == tbg_id) ) {
 +				if( force_friendly_fire ) {
-+					// Hook: on mf_friendly_fire or SC_FRIENDLYFIRE, allied party members become offensive targets.
 +					state |= BCT_ENEMY;
 +					strip_enemy = 0;
-+				}else
++				} else
 +					state |= BCT_PARTY;
-+			}else
++			} else
  				state |= BCT_ENEMY;
  		}
  		if( flag&(BCT_GUILD|BCT_ENEMY) )
@@ -44,16 +63,15 @@ index 3e39475..f141b40 100644
 +
 +			if( !(mapdata->getMapFlag(MF_PVP) && mapdata->getMapFlag(MF_PVP_NOGUILD)) && is_same_guild_or_ally && (!mapdata->getMapFlag(MF_BATTLEGROUND) || sbg_id == tbg_id) ) {
 +				if( force_friendly_fire ) {
-+					// Hook: on mf_friendly_fire or SC_FRIENDLYFIRE, guild allies become offensive targets.
 +					state |= BCT_ENEMY;
 +					strip_enemy = 0;
-+				}else
++				} else
 +					state |= BCT_GUILD;
-+			}else
++			} else
  				state |= BCT_ENEMY;
  		}
  		if( state&BCT_ENEMY && mapdata->getMapFlag(MF_BATTLEGROUND) && sbg_id && sbg_id == tbg_id )
-@@ -9994,15 +10013,28 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
+@@ -8705,15 +8721,28 @@ int32 battle_check_target( const block_list* src, const block_list* target, int3
  		if( flag&BCT_PARTY || state&BCT_ENEMY )
  		{
  			int32 s_party = status_get_party_id(s_bl);
@@ -65,7 +83,7 @@ index 3e39475..f141b40 100644
 +				if( force_friendly_fire ) {
 +					state |= BCT_ENEMY;
 +					strip_enemy = 0;
-+				}else
++				} else
 +					state |= BCT_PARTY;
 +			}
  		}
@@ -80,74 +98,82 @@ index 3e39475..f141b40 100644
 +				if( force_friendly_fire ) {
 +					state |= BCT_ENEMY;
 +					strip_enemy = 0;
-+				}else
++				} else
 +					state |= BCT_GUILD;
 +			}
  		}
  	} //end non pvp/gvg chk rivality
  
 diff --git a/src/map/map.hpp b/src/map/map.hpp
-index 38da3c7..a8ec9e9 100644
+index d32f752..6949b4a 100644
 --- a/src/map/map.hpp
 +++ b/src/map/map.hpp
-@@ -593,7 +593,8 @@ enum _sp {
+@@ -589,7 +589,8 @@ enum _sp {
+ 	SP_MAGIC_SUBDEF_ELE, SP_REDUCE_DAMAGE_RETURN, SP_ADD_ITEM_SPHEAL_RATE, SP_ADD_ITEMGROUP_SPHEAL_RATE, // 2098-2101
+ 	SP_WEAPON_SUBSIZE, SP_ABSORB_DMG_MAXHP2, // 2102-2103
  	SP_SP_IGNORE_RES_RACE_RATE, SP_SP_IGNORE_MRES_RACE_RATE, SP_EMATK_HIDDEN, SP_SKILL_RATIO, // 2104-2107
- 	SP_NON_CRIT_ATK_RATE, //2108
- 	SP_CAMPFIRE_HEAL_RATE, //2109
--	SP_PARTY_SYNERGY //2110
-+	SP_PARTY_SYNERGY, //2110
-+	SP_FRIENDLY_FIRE //2111
+-	SP_NON_CRIT_ATK_RATE //2108
++	SP_NON_CRIT_ATK_RATE, //2108
++	SP_FRIENDLY_FIRE //2109
  };
  
  enum _look {
-@@ -704,6 +705,7 @@ enum e_mapflag : int16 {
- 	MF_NOCAMPFIRE,
- 	MF_NO_MERCY,
- 	MF_BLOOD_TAX,
+@@ -695,6 +696,7 @@ enum e_mapflag : int16 {
+ 	MF_SPECIALPOPUP,
+ 	MF_NOMACROCHECKER,
+ 	MF_INVINCIBLE_TIME,
 +	MF_FRIENDLY_FIRE,
- 	MF_GEAR_LOCK,
  	MF_MAX
  };
+ 
 diff --git a/src/map/npc.cpp b/src/map/npc.cpp
-index 60f63fd..32d46fa 100644
+index 59d4158..bdf1199 100644
 --- a/src/map/npc.cpp
 +++ b/src/map/npc.cpp
-@@ -5733,6 +5733,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
- 			map_setmapflag(m, mapflag, state);
+@@ -5628,6 +5628,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
+ 			}
  			break;
  
 +		case MF_FRIENDLY_FIRE:
 +			map_setmapflag(m, mapflag, state);
 +			break;
 +
- 		case MF_GEAR_LOCK:
+ 		// All others do not need special treatment
+ 		default:
  			map_setmapflag(m, mapflag, state);
- 			break;
 diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
-index cbafbdd..2b014eb 100644
+index b2d500d..34f91f7 100644
 --- a/src/map/script_constants.hpp
 +++ b/src/map/script_constants.hpp
-@@ -541,6 +541,7 @@
- 	export_constant(MF_NOCAMPFIRE);
- 	export_constant(MF_NO_MERCY);
- 	export_constant(MF_BLOOD_TAX);
+@@ -536,6 +536,7 @@
+ 	export_constant(MF_SPECIALPOPUP);
+ 	export_constant(MF_NOMACROCHECKER);
+ 	export_constant(MF_INVINCIBLE_TIME);
 +	export_constant(MF_FRIENDLY_FIRE);
- 	export_constant(MF_GEAR_LOCK);
  
  	/* setcell types */
-@@ -757,6 +758,7 @@
- 	export_constant2("bHealPower2",SP_ADD_HEAL2_RATE);
- 	export_constant2("bCampfireHeal",SP_CAMPFIRE_HEAL_RATE);
- 	export_constant2("bPartySynergy",SP_PARTY_SYNERGY);
-+	export_constant2("bFriendlyFire",SP_FRIENDLY_FIRE);
- 	export_constant2("bIgnoreResRaceRate",SP_SP_IGNORE_RES_RACE_RATE);
- 	export_constant2("bIgnoreMResRaceRate",SP_SP_IGNORE_MRES_RACE_RATE);
+ 	export_constant(CELL_WALKABLE);
+@@ -857,6 +858,7 @@
+ 	export_constant2("bAddItemGroupSPHealRate", SP_ADD_ITEMGROUP_SPHEAL_RATE);
+ 	export_constant2("bWeaponSubSize", SP_WEAPON_SUBSIZE);
+ 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
++	export_constant2("bFriendlyFire", SP_FRIENDLY_FIRE);
  
-@@ -2013,6 +2015,7 @@
+ 	/* equip indices */
+ 	export_constant(EQI_COMPOUND_ON);
+@@ -2004,6 +2006,7 @@
+ 	export_constant(SC_WATER_CHARM_POWER);
  	export_constant(SC_WIND_CHARM_POWER);
  	export_constant(SC_GROUND_CHARM_POWER);
- 	export_constant(SC_VIPSTATE);
 +	export_constant(SC_FRIENDLYFIRE);
  
  /// Do not modify code below this, until the end of the API hook, since it will be automatically generated again
  /// @APIHOOK_START(EFST_CONST)
+@@ -3461,6 +3464,7 @@
+ 	export_constant(EFST_WATER_CHARM_POWER);
+ 	export_constant(EFST_WIND_CHARM_POWER);
+ 	export_constant(EFST_GROUND_CHARM_POWER);
++	export_constant(EFST_FRIENDLYFIRE);
+ 	export_constant(EFST_OVERCOMING_CRISIS);
+ 	export_constant(EFST_CONTENTS_36);
+ 	export_constant(EFST_CONTENTS_37);

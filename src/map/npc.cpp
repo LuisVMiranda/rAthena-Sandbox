@@ -5629,7 +5629,6 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
 			break;
 
 		case MF_FRIENDLY_FIRE:
-		case MF_NO_MERCY:
 			map_setmapflag(m, mapflag, state);
 			break;
 
