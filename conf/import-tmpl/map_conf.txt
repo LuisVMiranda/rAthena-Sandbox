@@ -1,0 +1,7 @@
+// --------------------------------------------------------------
+// -                 Map-Server Import Overrides                 -
+// --------------------------------------------------------------
+// This file is optional and can be copied to conf/import/map_conf.txt.
+//
+// Include optional mapflag operator references.
+import: conf/mapflag/no_mercy.conf
