@@ -199,6 +199,9 @@ Atk/Def
 -------
 bonus2 bSkillAtk,sk,n;    		Increases damage of skill sk by n%
 bonus bSkillRatio,n;			Adds n to the skillratio of all attacks/skills that use it
+bonus bMonsterScholar,n;		Progressive PvE damage bonus by race using permanent variable MobKillCount_<RaceID>
+					+0.1% Physical and Magical damage per 1000 kills (max +5% per race), not applied to RC_PLAYER_HUMAN/RC_PLAYER_DORAM
+					Example: bonus bMonsterScholar,1; // +0.1% per 1000 kills against each non-player race
 bonus bShortAtkRate,n;			Increases damage of short ranged attacks by n%
 bonus bLongAtkRate,n;     		Increases damage of long ranged attacks by n%
 bonus bCritAtkRate,n;     		Increases critical damage by +n%

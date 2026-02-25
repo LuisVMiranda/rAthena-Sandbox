@@ -32,6 +32,7 @@
 #include "path.hpp"
 #include "pc.hpp"
 #include "pc_groups.hpp"
+#include "script.hpp"
 #include "pet.hpp"
 #include "./skills/skill_impl.hpp"
 
@@ -49,6 +50,39 @@ int32 battle_get_weapon_element( const Damage *wd, const block_list* src, const 
 int32 battle_get_magic_element( const block_list* src, const block_list* target, uint16 skill_id, uint16 skill_lv, int32 mflag );
 int32 battle_get_misc_element( const block_list* src, const block_list* target, uint16 skill_id, uint16 skill_lv, int32 mflag );
 static void battle_calc_defense_reduction( Damage* wd, block_list* src, block_list* target, uint16 skill_id, uint16 skill_lv );
+
+static int32 battle_get_monster_scholar_bonus( const map_session_data& sd, e_race race ){
+	if( sd.bonus.monster_scholar <= 0 )
+		return 0;
+
+	if( race < 0 || race >= RC_MAX )
+		return 0;
+
+	if( race == RC_PLAYER_HUMAN || race == RC_PLAYER_DORAM )
+		return 0;
+
+	static int64 kill_vars[RC_MAX] = {};
+	static bool initialized = false;
+
+	if( !initialized ){
+		for( int32 i = 0; i < RC_MAX; i++ ){
+			char var_name[32];
+			safesnprintf( var_name, sizeof( var_name ), "MobKillCount_%d", i );
+			kill_vars[i] = add_str( var_name );
+		}
+		initialized = true;
+	}
+
+	const int64 kill_count = pc_readregistry( &sd, kill_vars[race] );
+	if( kill_count <= 0 )
+		return 0;
+
+	int32 steps = static_cast<int32>( kill_count / 1000 );
+	if( steps > 50 )
+		steps = 50;
+
+	return steps * sd.bonus.monster_scholar;
+}
 
 /**
  * Returns the current/list skill used by the bl
@@ -1712,6 +1746,13 @@ int64 battle_calc_damage(block_list *src,block_list *bl,struct Damage *d,int64 d
 	}
 
 	status_change* tsc = status_get_sc(bl); //check target status
+
+	if( tsd != nullptr && damage > 0 && ( flag&( BF_WEAPON | BF_MAGIC ) ) != 0 ){
+		int32 scholar_bonus = battle_get_monster_scholar_bonus( *tsd, static_cast<e_race>( status_get_race( bl ) ) );
+
+		if( scholar_bonus > 0 )
+			damage += damage * scholar_bonus / 1000;
+	}
 
 	// Nothing can reduce the damage, but Safety Wall and Millennium Shield can block it completely.
 	// So can defense sphere's but what the heck is that??? [Rytech]

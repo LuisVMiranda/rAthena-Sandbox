@@ -672,7 +672,7 @@ public:
 
 		int16 splash_range, splash_add_range;
 		int16 add_steal_rate;
-		int32 add_heal_rate, add_heal2_rate;
+		int32 add_heal_rate, add_heal2_rate, monster_scholar;
 		int32 sp_gain_value, hp_gain_value, magic_sp_gain_value, magic_hp_gain_value, long_sp_gain_value, long_hp_gain_value;
 		uint16 unbreakable;	// chance to prevent ANY equipment breaking [celest]
 		uint16 unbreakable_equip; //100% break resistance on certain equipment
