@@ -860,6 +860,7 @@
 	export_constant2("bWeaponSubSize", SP_WEAPON_SUBSIZE);
 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
 	export_constant2("bFriendlyFire", SP_FRIENDLY_FIRE);
+	export_constant2("bMonsterScholar", SP_MONSTER_SCHOLAR);
 
 	/* equip indices */
 	export_constant(EQI_COMPOUND_ON);
