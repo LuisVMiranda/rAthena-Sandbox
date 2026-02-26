@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <set>
 #include <vector>
@@ -5951,6 +5952,25 @@ static const char* npc_campfire_localized( map_session_data* sd, uint8 key, cons
 	return msg_txt( sd, msg_id );
 }
 
+static void npc_campfire_build_name( map_session_data& sd, char (&campfire_name)[NPC_NAME_LENGTH + 1] ){
+	const char* default_name = "Campfire";
+	safestrncpy( campfire_name, default_name, sizeof(campfire_name) );
+
+	if( battle_config.feature_campfire_npc_name_msg <= 0 )
+		return;
+
+	const char* configured_name = msg_txt( &sd, battle_config.feature_campfire_npc_name_msg );
+	if( configured_name == nullptr || *configured_name == '\0' )
+		return;
+
+	std::string dynamic_name = configured_name;
+	const std::string token = "{player}";
+	for( size_t pos = 0; ( pos = dynamic_name.find( token, pos ) ) != std::string::npos; pos += strlen( sd.status.name ) )
+		dynamic_name.replace( pos, token.size(), sd.status.name );
+
+	safestrncpy( campfire_name, dynamic_name.c_str(), sizeof(campfire_name) );
+}
+
 bool npc_campfire_use_item( map_session_data& sd ){
 	if( pc_isdead( &sd ) )
 		return false;
@@ -5986,7 +6006,8 @@ bool npc_campfire_use_item( map_session_data& sd ){
 	if( !map_search_freecell( &sd, 0, &x, &y, 3, 3, 0 ) )
 		return false;
 
-	char campfire_name[NPC_NAME_LENGTH + 1] = "Campfire";
+	char campfire_name[NPC_NAME_LENGTH + 1];
+	npc_campfire_build_name( sd, campfire_name );
 	npc_data* campfire_nd = npc_duplicate_npc( *template_nd, campfire_name, sd.m, x, y, 10252, DIR_NORTH, -1, -1, nullptr );
 	if( campfire_nd == nullptr )
 		return false;
@@ -6012,6 +6033,7 @@ bool npc_campfire_use_item( map_session_data& sd ){
 
 	return true;
 }
+
 
 static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
 	map_session_data* tsd = BL_CAST( BL_PC, bl );
