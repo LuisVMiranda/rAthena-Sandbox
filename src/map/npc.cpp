@@ -3,9 +3,11 @@
 
 #include "npc.hpp"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <map>
+#include <set>
 #include <vector>
 
 #include <common/cbasetypes.hpp>
@@ -67,6 +69,8 @@ static void npc_market_fromsql(void);
 #endif
 
 TIMER_FUNC(npc_dynamicnpc_removal_timer);
+TIMER_FUNC(npc_campfire_tick_timer);
+TIMER_FUNC(npc_campfire_expire_timer);
 
 /// Returns a new npc id that isn't being used in id_db.
 /// Fatal error if nothing is available.
@@ -118,6 +122,24 @@ struct script_event_s{
 
 // Holds pointers to the commonly executed scripts for speedup. [Skotlex]
 std::map<enum npce_event, std::vector<struct script_event_s>> script_event;
+
+struct s_campfire_runtime {
+	int32 owner_char_id = 0;
+	int32 party_id = 0;
+	t_tick end_tick = 0;
+	int32 tick_tid = INVALID_TIMER;
+	int32 expire_tid = INVALID_TIMER;
+	t_tick next_heal_tick = 0;
+	std::map<int32, bool> zone_state_by_char;
+};
+
+static std::map<int32, s_campfire_runtime> campfire_runtime_by_npc;
+static std::map<int32, int32> campfire_npc_by_owner;
+static std::map<int32, t_tick> campfire_cooldown_by_owner;
+
+static void npc_campfire_cleanup( int32 npc_id, bool unload_npc );
+static int32 npc_campfire_regen_sub( block_list* bl, va_list ap );
+static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int32 value = 0 );
 
 // Static functions
 static npc_data* npc_create_npc( int16 m, int16 x, int16 y );
@@ -3578,6 +3600,8 @@ int32 npc_unload(npc_data* nd, bool single) {
 		nd->dynamicnpc.removal_tid = INVALID_TIMER;
 	}
 
+	npc_campfire_cleanup( nd->id, false );
+
 	if( nd->dynamicnpc.owner_char_id != 0 ){
 		map_session_data* owner = map_charid2sd( nd->dynamicnpc.owner_char_id );
 
@@ -5896,6 +5920,216 @@ npc_data* npc_duplicate_npc( npc_data& nd, char name[NPC_NAME_LENGTH + 1], int16
 	return dnd;
 }
 
+static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int32 value ){
+	static char buffer[96];
+	int32 lang = battle_config.feature_campfire_language;
+	if( sd != nullptr ){
+		int32 char_lang = pc_readglobalreg( sd, add_str("CAMPFIRE_LANG") );
+		if( char_lang >= 1 && char_lang <= 3 )
+			lang = char_lang;
+	}
+
+	int32 msg_id = 2901;
+	switch( key ){
+		case 0: msg_id = ( lang == 2 ? 2911 : ( lang == 3 ? 2921 : 2901 ) ); break;
+		case 1: msg_id = ( lang == 2 ? 2912 : ( lang == 3 ? 2922 : 2902 ) ); break;
+		case 2: msg_id = ( lang == 2 ? 2913 : ( lang == 3 ? 2923 : 2903 ) ); break;
+		default: return "";
+	}
+
+	if( key == 2 ){
+		safesnprintf( buffer, sizeof(buffer), msg_txt( sd, msg_id ), value );
+		return buffer;
+	}
+	return msg_txt( sd, msg_id );
+}
+
+bool npc_campfire_use_item( map_session_data& sd ){
+	if( pc_isdead( &sd ) )
+		return false;
+
+	if( map_getmapflag( sd.m, MF_NOCAMPFIRE ) ) {
+		clif_displaymessage( sd.fd, "Campfire cannot be used on this map." );
+		return false;
+	}
+
+	if( mapdata_flag_gvg2( map_getmapdata( sd.m ) ) || map_getmapflag( sd.m, MF_BATTLEGROUND ) ) {
+		clif_displaymessage( sd.fd, "Campfire cannot be used on this map." );
+		return false;
+	}
+
+	const t_tick now = gettick();
+	auto cd_it = campfire_cooldown_by_owner.find( sd.status.char_id );
+	if( cd_it != campfire_cooldown_by_owner.end() && DIFF_TICK( cd_it->second, now ) > 0 )
+		return false;
+
+	auto active_it = campfire_npc_by_owner.find( sd.status.char_id );
+	if( active_it != campfire_npc_by_owner.end() && campfire_runtime_by_npc.find( active_it->second ) != campfire_runtime_by_npc.end() )
+		return false;
+
+	npc_data* template_nd = npc_name2id( "CAMPFIRE_TEMPLATE" );
+	if( template_nd == nullptr ){
+		ShowWarning( "npc_campfire_use_item: CAMPFIRE_TEMPLATE not found. Ensure npc/custom/campfire_system.txt is loaded in npc/scripts_custom.conf.\n" );
+		clif_displaymessage( sd.fd, "Campfire system is not loaded. Contact an administrator." );
+		return false;
+	}
+
+	int16 x = sd.x;
+	int16 y = sd.y;
+	if( !map_search_freecell( &sd, 0, &x, &y, 3, 3, 0 ) )
+		return false;
+
+	char campfire_name[NPC_NAME_LENGTH + 1] = "Campfire";
+	npc_data* campfire_nd = npc_duplicate_npc( *template_nd, campfire_name, sd.m, x, y, 10252, DIR_NORTH, -1, -1, nullptr );
+	if( campfire_nd == nullptr )
+		return false;
+
+	const int32 duration_sec = pc_isvip( &sd ) ? battle_config.feature_campfire_vip_duration : battle_config.feature_campfire_nonvip_duration;
+
+	s_campfire_runtime runtime = {};
+	runtime.owner_char_id = sd.status.char_id;
+	runtime.party_id = sd.status.party_id;
+	runtime.end_tick = now + duration_sec * 1000;
+	runtime.next_heal_tick = now;
+	runtime.tick_tid = add_timer( now + 1000, npc_campfire_tick_timer, campfire_nd->id, 0 );
+	runtime.expire_tid = add_timer( runtime.end_tick, npc_campfire_expire_timer, campfire_nd->id, 0 );
+
+	campfire_runtime_by_npc[campfire_nd->id] = runtime;
+	campfire_npc_by_owner[sd.status.char_id] = campfire_nd->id;
+	campfire_cooldown_by_owner[sd.status.char_id] = now + battle_config.feature_campfire_cooldown * 1000;
+
+	campfire_nd->progressbar.color = 0x00FF00;
+	campfire_nd->progressbar.timeout = runtime.end_tick;
+	clif_progressbar_npc_area( campfire_nd );
+
+	return true;
+}
+
+static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
+	map_session_data* tsd = BL_CAST( BL_PC, bl );
+	if( tsd == nullptr )
+		return 0;
+
+	int32 campfire_npc_id = va_arg( ap, int32 );
+	std::set<int32>* in_range_chars = va_arg( ap, std::set<int32>* );
+	bool do_heal = va_arg( ap, int32 ) != 0;
+	auto it = campfire_runtime_by_npc.find( campfire_npc_id );
+	if( it == campfire_runtime_by_npc.end() )
+		return 0;
+
+	if( tsd->status.char_id != it->second.owner_char_id && (it->second.party_id == 0 || tsd->status.party_id != it->second.party_id) )
+		return 0;
+
+	in_range_chars->insert( tsd->status.char_id );
+	if( !it->second.zone_state_by_char[tsd->status.char_id] ){
+		it->second.zone_state_by_char[tsd->status.char_id] = true;
+		clif_displaymessage( tsd->fd, npc_campfire_localized( tsd, 0 ) );
+		if( battle_config.feature_campfire_icon > 0 )
+			clif_status_change( tsd, battle_config.feature_campfire_icon, 1, INFINITE_TICK, 0, 0, 0 );
+	}
+
+	if( do_heal ){
+		const int32 hp_gain = std::max<int32>( 1, status_get_max_hp( tsd ) * battle_config.feature_campfire_hp_percent / 100 );
+		const int32 sp_gain = std::max<int32>( 1, status_get_max_sp( tsd ) * battle_config.feature_campfire_sp_percent / 100 );
+		status_heal( tsd, hp_gain, sp_gain, 3 );
+		if( battle_config.feature_campfire_ground_effect > 0 )
+			clif_specialeffect( tsd, battle_config.feature_campfire_ground_effect, SELF );
+	}
+
+	return 0;
+}
+
+static void npc_campfire_cleanup( int32 npc_id, bool unload_npc ){
+	auto it = campfire_runtime_by_npc.find( npc_id );
+	if( it == campfire_runtime_by_npc.end() )
+		return;
+
+	if( it->second.tick_tid != INVALID_TIMER )
+		delete_timer( it->second.tick_tid, npc_campfire_tick_timer );
+	if( it->second.expire_tid != INVALID_TIMER )
+		delete_timer( it->second.expire_tid, npc_campfire_expire_timer );
+
+	if( battle_config.feature_campfire_icon > 0 ){
+		for( const auto &pair : it->second.zone_state_by_char ){
+			if( !pair.second )
+				continue;
+			map_session_data* tsd = map_charid2sd( pair.first );
+			if( tsd != nullptr )
+				clif_status_change( tsd, battle_config.feature_campfire_icon, 0, 0, 0, 0, 0 );
+		}
+	}
+
+	campfire_npc_by_owner.erase( it->second.owner_char_id );
+	campfire_runtime_by_npc.erase( it );
+
+	if( unload_npc ){
+		npc_data* nd = map_id2nd( npc_id );
+		if( nd != nullptr ){
+			nd->progressbar.timeout = 0;
+			clif_progressbar_npc_area( nd );
+			npc_unload( nd, true );
+		}
+	}
+}
+
+TIMER_FUNC(npc_campfire_tick_timer){
+	auto it = campfire_runtime_by_npc.find( id );
+	if( it == campfire_runtime_by_npc.end() )
+		return 0;
+
+	it->second.tick_tid = INVALID_TIMER;
+	npc_data* nd = map_id2nd( id );
+	if( nd == nullptr ){
+		npc_campfire_cleanup( id, false );
+		return 0;
+	}
+
+	const t_tick now = gettick();
+	const int32 heal_interval_ms = battle_config.feature_campfire_tick_interval * 1000;
+	const bool do_heal = DIFF_TICK( now, it->second.next_heal_tick ) >= 0;
+	if( do_heal )
+		it->second.next_heal_tick = now + heal_interval_ms;
+
+	std::set<int32> in_range_chars;
+	map_foreachinallrange( npc_campfire_regen_sub, nd, battle_config.feature_campfire_range, BL_PC, id, &in_range_chars, do_heal ? 1 : 0 );
+
+	for( auto &pair : it->second.zone_state_by_char ){
+		if( !pair.second || in_range_chars.find( pair.first ) != in_range_chars.end() )
+			continue;
+		pair.second = false;
+		map_session_data* tsd = map_charid2sd( pair.first );
+		if( tsd != nullptr ){
+			clif_displaymessage( tsd->fd, npc_campfire_localized( tsd, 1 ) );
+			if( battle_config.feature_campfire_icon > 0 )
+				clif_status_change( tsd, battle_config.feature_campfire_icon, 0, 0, 0, 0, 0 );
+		}
+	}
+
+	const t_tick remain = DIFF_TICK( it->second.end_tick, now );
+	if( remain <= 5000 && remain > 0 ){
+		const int32 secs = static_cast<int32>( ( remain + 999 ) / 1000 );
+		for( int32 char_id : in_range_chars ){
+			map_session_data* tsd = map_charid2sd( char_id );
+			if( tsd != nullptr )
+				clif_showscript( tsd, npc_campfire_localized( tsd, 2, secs ), SELF );
+		}
+	}
+	if( remain > 1000 )
+		it->second.tick_tid = add_timer( now + 1000, npc_campfire_tick_timer, id, 0 );
+
+	return 0;
+}
+
+TIMER_FUNC(npc_campfire_expire_timer){
+	auto it = campfire_runtime_by_npc.find( id );
+	if( it == campfire_runtime_by_npc.end() )
+		return 0;
+
+	it->second.expire_tid = INVALID_TIMER;
+	npc_campfire_cleanup( id, true );
+	return 0;
+}
+
 TIMER_FUNC(npc_dynamicnpc_removal_timer){
 	npc_data* nd = map_id2nd( id );
 
@@ -6282,6 +6516,9 @@ void do_final_npc(void) {
 #endif
 	stylist_db.clear();
 	barter_db.clear();
+	campfire_runtime_by_npc.clear();
+	campfire_npc_by_owner.clear();
+	campfire_cooldown_by_owner.clear();
 	ers_destroy(timer_event_ers);
 	ers_destroy(npc_sc_display_ers);
 	npc_src_files.clear();
@@ -6370,6 +6607,8 @@ void do_init_npc(void){
 	add_timer_func_list(npc_event_do_clock,"npc_event_do_clock");
 	add_timer_func_list(npc_timerevent,"npc_timerevent");
 	add_timer_func_list( npc_dynamicnpc_removal_timer, "npc_dynamicnpc_removal_timer" );
+	add_timer_func_list( npc_campfire_tick_timer, "npc_campfire_tick_timer" );
+	add_timer_func_list( npc_campfire_expire_timer, "npc_campfire_expire_timer" );
 #ifdef SECURE_NPCTIMEOUT
 	add_timer_func_list( npc_secure_timeout_timer, "npc_secure_timeout_timer" );
 #endif
