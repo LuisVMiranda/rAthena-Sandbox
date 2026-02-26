@@ -7023,6 +7023,19 @@ BUILDIN_FUNC(viewpointmap) {
 	return SCRIPT_CMD_SUCCESS;
 }
 
+BUILDIN_FUNC(viewpointmap2) {
+	const char* map = script_getstr(st, 2);
+	int16 mapid = map_mapname2mapid(map);
+
+	if (mapid < 0) {
+		ShowError("buildin_viewpointmap2: Unknown map name %s.\n", map);
+		return SCRIPT_CMD_FAILURE;
+	}
+
+	map_foreachinmap(buildin_viewpointmap_sub, mapid, BL_PC, st->oid, script_getnum(st, 3), script_getnum(st, 4), script_getnum(st, 5), script_getnum(st, 6), script_getnum(st, 7));
+	return SCRIPT_CMD_SUCCESS;
+}
+
 /**
  * Set random options for new item
  * @param st Script state
@@ -21585,6 +21598,44 @@ BUILDIN_FUNC(bg_unbook)
 	return SCRIPT_CMD_SUCCESS;
 }
 
+BUILDIN_FUNC(bg_queue_join) {
+	const char* name = script_getstr(st, 2);
+	int32 queue_type = script_getnum(st, 3);
+	map_session_data* sd;
+
+	if (!script_charid2sd(4, sd)) {
+		script_pushint(st, 0);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	switch (queue_type) {
+		case 1:
+			bg_queue_join_party(name, sd);
+			break;
+		case 2:
+			bg_queue_join_guild(name, sd);
+			break;
+		default:
+			bg_queue_join_solo(name, sd);
+			break;
+	}
+
+	script_pushint(st, 1);
+	return SCRIPT_CMD_SUCCESS;
+}
+
+BUILDIN_FUNC(getcharqueue) {
+	map_session_data* sd;
+
+	if (!script_charid2sd(2, sd)) {
+		script_pushint(st, -1);
+		return SCRIPT_CMD_SUCCESS;
+	}
+
+	script_pushint(st, sd->bg_queue_id);
+	return SCRIPT_CMD_SUCCESS;
+}
+
 /**
  * Gets battleground database information.
  * bg_info("<battleground name>", <type>);
@@ -24792,6 +24843,20 @@ BUILDIN_FUNC(hateffect){
 	return SCRIPT_CMD_SUCCESS;
 }
 
+BUILDIN_FUNC(fakeIcon) {
+	int32 char_id = script_getnum(st, 2);
+	int32 icon_id = script_getnum(st, 3);
+	int32 time = script_getnum(st, 4);
+	bool state = script_getnum(st, 5) == 1;
+	map_session_data* sd = map_charid2sd(char_id);
+
+	if (sd == nullptr)
+		return SCRIPT_CMD_FAILURE;
+
+	clif_status_change(sd, static_cast<sc_type>(icon_id), state, static_cast<t_tick>(time), 0, 0, 0);
+	return SCRIPT_CMD_SUCCESS;
+}
+
 /**
  * Check if hat effect is enabled on a unit
  * *has_hateffect(<effect_id>{,<GID>});
@@ -27902,6 +27967,7 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(cutin,"si"),
 	BUILDIN_DEF(viewpoint,"iiiii?"),
 	BUILDIN_DEF(viewpointmap, "siiiii"),
+	BUILDIN_DEF(viewpointmap2, "siiiii"),
 	BUILDIN_DEF(heal,"ii?"),
 	BUILDIN_DEF(healap,"i?"),
 	BUILDIN_DEF(itemheal,"ii?"),
@@ -28332,6 +28398,8 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(bg_create,"sii??"),
 	BUILDIN_DEF(bg_reserve,"s?"),
 	BUILDIN_DEF(bg_unbook,"s"),
+	BUILDIN_DEF(bg_queue_join,"sii"),
+	BUILDIN_DEF(getcharqueue,"i"),
 	BUILDIN_DEF(bg_info,"si"),
 
 	// Instancing
@@ -28437,6 +28505,7 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(getexp2,"ii?"),
 	BUILDIN_DEF(recalculatestat,""),
 	BUILDIN_DEF(hateffect,"ii?"),
+	BUILDIN_DEF(fakeIcon,"iiii"),
 	BUILDIN_DEF(has_hateffect, "i?"),
 	BUILDIN_DEF(getrandomoptinfo, "i"),
 	BUILDIN_DEF(getequiprandomoption, "iii?"),
