@@ -5929,11 +5929,11 @@ static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int3
 			lang = char_lang;
 	}
 
-	int32 msg_id = 2901;
+	int32 msg_id = 1541;
 	switch( key ){
-		case 0: msg_id = ( lang == 2 ? 2911 : ( lang == 3 ? 2921 : 2901 ) ); break;
-		case 1: msg_id = ( lang == 2 ? 2912 : ( lang == 3 ? 2922 : 2902 ) ); break;
-		case 2: msg_id = ( lang == 2 ? 2913 : ( lang == 3 ? 2923 : 2903 ) ); break;
+		case 0: msg_id = ( lang == 2 ? 1544 : ( lang == 3 ? 1547 : 1541 ) ); break;
+		case 1: msg_id = ( lang == 2 ? 1545 : ( lang == 3 ? 1548 : 1542 ) ); break;
+		case 2: msg_id = ( lang == 2 ? 1546 : ( lang == 3 ? 1549 : 1543 ) ); break;
 		default: return "";
 	}
 
