@@ -4761,6 +4761,8 @@ int32 skill_castend_nodamage_id (block_list *src, block_list *bl, uint16 skill_i
 		break;
 
 	case ALL_RESURRECTION:
+		if (map_getmapflag(bl->m, MF_NORESS))
+			break;
 		if(sd && (map_flag_gvg2(bl->m) || map_getmapflag(bl->m, MF_BATTLEGROUND)))
 		{	//No reviving in WoE grounds!
 			clif_skill_fail( *sd, skill_id );
