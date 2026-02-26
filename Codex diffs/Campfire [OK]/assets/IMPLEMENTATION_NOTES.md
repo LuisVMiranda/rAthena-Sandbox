@@ -65,10 +65,13 @@
 
 
 ## Message source
-- Runtime texts are loaded via `msg_txt()` ids in `conf/msg_conf/map_msg.conf` (ids `2901..2926`).
+- Runtime texts are loaded via `msg_txt()` ids in `conf/msg_conf/map_msg.conf` (ids `1541..1549`).
 - Helper function: `npc_campfire_localized()` in `src/map/npc.cpp`.
+- Keep campfire message IDs **below `MAP_MAX_MSG`** (default map-server cap is `1550` in `src/map/map.cpp`). If higher IDs are needed, raise `MAP_MAX_MSG` via `src/custom/defines_pre.hpp` and rebuild.
 
 
 ## Campfire heal bonus
 - New script bonus `bCampfireHeal,<percent>;` modifies campfire healing (positive amplifies, negative reduces).
 - Works from item scripts and random options because it is implemented as a normal `bonus` parameter.
+
+- Ensure `npc/custom/campfire_system.txt` is present and enabled in `npc/scripts_custom.conf`; otherwise no campfire can be spawned from item 7035.

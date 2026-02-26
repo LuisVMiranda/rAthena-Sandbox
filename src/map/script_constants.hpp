@@ -537,6 +537,7 @@
 	export_constant(MF_NOMACROCHECKER);
 	export_constant(MF_INVINCIBLE_TIME);
 	export_constant(MF_FRIENDLY_FIRE);
+	export_constant(MF_NOCAMPFIRE);
 	export_constant(MF_NO_MERCY);
 
 	/* setcell types */
@@ -861,6 +862,7 @@
 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
 	export_constant2("bFriendlyFire", SP_FRIENDLY_FIRE);
 	export_constant2("bMonsterScholar", SP_MONSTER_SCHOLAR);
+	export_constant2("bCampfireHealRate", SP_CAMPFIRE_HEAL_RATE);
 
 	/* equip indices */
 	export_constant(EQI_COMPOUND_ON);
