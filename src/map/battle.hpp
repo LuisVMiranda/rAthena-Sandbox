@@ -768,6 +768,7 @@ struct Battle_Config
 	int32 feature_campfire_cooldown;
 	int32 feature_campfire_icon;
 	int32 feature_campfire_ground_effect;
+	int32 feature_campfire_language;
 	int32 feature_no_mercy_recover_rate;
 
 	int32 mob_respawn_time;

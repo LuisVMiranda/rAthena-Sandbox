@@ -139,7 +139,7 @@ static std::map<int32, t_tick> campfire_cooldown_by_owner;
 
 static void npc_campfire_cleanup( int32 npc_id, bool unload_npc );
 static int32 npc_campfire_regen_sub( block_list* bl, va_list ap );
-static const char* npc_campfire_localized( map_session_data* sd, uint8 key );
+static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int32 value = 0 );
 
 // Static functions
 static npc_data* npc_create_npc( int16 m, int16 x, int16 y );
@@ -5920,12 +5920,26 @@ npc_data* npc_duplicate_npc( npc_data& nd, char name[NPC_NAME_LENGTH + 1], int16
 	return dnd;
 }
 
-static const char* npc_campfire_localized( map_session_data* sd, uint8 key ){
+static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int32 value ){
+	static char buffer[96];
+	int32 lang = battle_config.feature_campfire_language;
+	if( sd != nullptr ){
+		int32 char_lang = pc_readglobalreg( sd, add_str("CAMPFIRE_LANG") );
+		if( char_lang >= 1 && char_lang <= 3 )
+			lang = char_lang;
+	}
+
 	int32 msg_id = 2901;
 	switch( key ){
-		case 0: msg_id = 2901; break; // enter
-		case 1: msg_id = 2902; break; // leave
+		case 0: msg_id = ( lang == 2 ? 2911 : ( lang == 3 ? 2921 : 2901 ) ); break;
+		case 1: msg_id = ( lang == 2 ? 2912 : ( lang == 3 ? 2922 : 2902 ) ); break;
+		case 2: msg_id = ( lang == 2 ? 2913 : ( lang == 3 ? 2923 : 2903 ) ); break;
 		default: return "";
+	}
+
+	if( key == 2 ){
+		safesnprintf( buffer, sizeof(buffer), msg_txt( sd, msg_id ), value );
+		return buffer;
 	}
 	return msg_txt( sd, msg_id );
 }
@@ -6092,6 +6106,14 @@ TIMER_FUNC(npc_campfire_tick_timer){
 	}
 
 	const t_tick remain = DIFF_TICK( it->second.end_tick, now );
+	if( remain <= 5000 && remain > 0 ){
+		const int32 secs = static_cast<int32>( ( remain + 999 ) / 1000 );
+		for( int32 char_id : in_range_chars ){
+			map_session_data* tsd = map_charid2sd( char_id );
+			if( tsd != nullptr )
+				clif_showscript( tsd, npc_campfire_localized( tsd, 2, secs ), SELF );
+		}
+	}
 	if( remain > 1000 )
 		it->second.tick_tid = add_timer( now + 1000, npc_campfire_tick_timer, id, 0 );
 
