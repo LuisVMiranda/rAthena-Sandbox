@@ -12758,7 +12758,7 @@ Body:
   - Id: 7035
     AegisName: Matchstick
     Name: Matchstick
-    Type: Etc
+    Type: Usable
     Buy: 100
     Weight: 10
     Flags:
