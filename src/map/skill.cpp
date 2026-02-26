@@ -503,6 +503,7 @@ bool skill_pos_maxcount_check(block_list *src, int16 x, int16 y, uint16 skill_id
 		}
 	}
 
+
 	return true;
 }
 
@@ -3618,6 +3619,23 @@ void skill_consume_hpspap(block_list* bl, uint16 skill_id, int32 hp, int32 sp, i
 	}
 
 	status_zap(bl, hp, sp, ap);
+}
+
+static int32 skill_blood_tax_cost( const map_session_data& sd, uint16 skill_id, const s_skill_condition& require ){
+	if( !map_getmapflag( sd.m, MF_BLOOD_TAX ) )
+		return 0;
+
+	if( skill_get_inf( skill_id ) == INF_PASSIVE_SKILL )
+		return 0;
+
+	// Do not stack with skills that already consume HP by default.
+	if( require.hp > 0 || require.hp_rate > 0 )
+		return 0;
+
+	if( battle_config.feature_blood_tax_hp_rate <= 0 )
+		return 0;
+
+	return std::max<int32>( 1, sd.battle_status.max_hp * battle_config.feature_blood_tax_hp_rate / 100 );
 }
 
 /*==========================================
@@ -10587,6 +10605,12 @@ bool skill_check_condition_castend( map_session_data& sd, uint16 skill_id, uint1
 		}
 	}
 
+	const int32 blood_tax_hp = skill_blood_tax_cost( sd, skill_id, require );
+	if( blood_tax_hp > 0 && status->hp < static_cast<uint32>( blood_tax_hp ) ) {
+		clif_displaymessage( sd.fd, msg_txt( &sd, 2930 ) );
+		return false;
+	}
+
 	return true;
 }
 
@@ -10633,6 +10657,10 @@ void skill_consume_requirement(map_session_data *sd, uint16 skill_id, uint16 ski
 		}
 		if(require.hp || require.sp || require.ap)
 			skill_consume_hpspap(sd, skill_id, require.hp, require.sp, require.ap);
+
+		const int32 blood_tax_hp = skill_blood_tax_cost( *sd, skill_id, require );
+		if( blood_tax_hp > 0 )
+			status_zap( sd, blood_tax_hp, 0, 0 );
 
 		if(require.spiritball > 0) { // Skills that require certain types of spheres to use
 			switch (skill_id) { // Skills that require soul spheres.

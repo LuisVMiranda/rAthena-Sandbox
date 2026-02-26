@@ -687,6 +687,7 @@ struct Battle_Config
 	int32 switch_remove_edp;
 	int32 feature_homunculus_autofeed;
 	int32 feature_homunculus_autofeed_rate;
+	int32 feature_blood_tax_hp_rate;
 	int32 summoner_race;
 	int32 summoner_size;
 	int32 homunculus_autofeed_always;

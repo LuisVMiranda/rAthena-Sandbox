@@ -5,3 +5,5 @@
 //
 // Include optional mapflag operator references.
 import: conf/mapflag/no_mercy.conf
+
+import: conf/mapflag/blood_tax.conf

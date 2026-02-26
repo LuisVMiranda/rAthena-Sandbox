@@ -541,6 +541,7 @@
 	export_constant(MF_FRIENDLY_FIRE);
 	export_constant(MF_NOCAMPFIRE);
 	export_constant(MF_NO_MERCY);
+	export_constant(MF_BLOOD_TAX);
 
 	/* setcell types */
 	export_constant(CELL_WALKABLE);
