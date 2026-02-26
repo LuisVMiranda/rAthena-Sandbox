@@ -1,0 +1,7 @@
+# AggregatorCP SQL migration execution order (strict)
+1|upgrades/001_core_telemetry_and_advice.sql|Core telemetry/event typing/advice/admin flags schema
+2|upgrades/002_market_chat_and_admin_console.sql|Market/chat telemetry + admin console tables + market insights
+3|upgrades/003_housekeeping_and_index_hardening.sql|Housekeeping metrics + late index hardening and uniqueness constraints
+4|upgrades/004_acp_admin_console_tables.sql|AggregatorCP admin/action/bridge queue tables with acp_ prefix
+5|upgrades/005_acp_watch_cases.sql|Watch Center cases/events for scheduled monitoring and webhook alerts
+6|upgrades/006_acp_watch_case_rules_and_stats.sql|Watch Center criteria rules, thresholds and checks counter

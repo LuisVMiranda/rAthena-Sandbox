@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aggregator Control Panel</title>
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8; --line:#334155; --accent:#3b82f6; --accent-hover:#1d4ed8; --ok:#10b981; --bad:#ef4444; --warn:#f59e0b; --input-bg:#0b1222; --chip:#1f2937; }
+    body.light { --bg:#f3f4f6; --card:#fff; --text:#0f172a; --muted:#475569; --line:#cbd5e1; --accent:#2563eb; --accent-hover:#1e40af; --ok:#047857; --bad:#dc2626; --warn:#b45309; --input-bg:#fff; --chip:#e2e8f0; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Inter,system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:1340px; margin:0 auto; padding:18px; }
+    .app-shell { display:grid; grid-template-columns:260px 1fr; gap:12px; align-items:start; }
+    @media (max-width:900px){ .app-shell{ grid-template-columns:1fr; } }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    .menu { display:flex; flex-direction:column; gap:8px; margin:0; position:sticky; top:10px; }
+    .menu button { background:var(--chip); color:var(--text); border:1px solid var(--line); }
+    .menu button.active { border-color:var(--accent); color:var(--accent); }
+    .subtab { background:var(--chip); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px 12px; cursor:pointer; }
+    .subtab.active { border-color:var(--accent); color:var(--accent); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; min-width:0; overflow:hidden; }
+    .hidden { display:none !important; }
+    label { display:block; font-size:.82rem; color:var(--muted); margin-top:8px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width:760px){ .row{ grid-template-columns:1fr; } }
+    input, select, textarea { width:100%; max-width:100%; margin-top:4px; padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--input-bg); color:var(--text); }
+    select option { background:var(--input-bg); color:var(--text); }
+    input[type="range"] { padding:0; }
+    .slider-value { font-size:.8rem; color:var(--muted); margin-left:8px; }
+    button { border:0; border-radius:8px; padding:14px 18px; background:var(--accent); color:white; cursor:pointer; transition: background-color .2s ease; margin-top:12px; margin-right:8px; }
+    button:hover { background:var(--accent-hover); }
+    .feedback { margin-top:10px; border-radius:8px; padding:9px; background:var(--chip); border:1px solid var(--line); font-size:.9rem; }
+    .status-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-top:10px; }
+    .stat { border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--chip); }
+    .chip { display:inline-block; border-radius:999px; padding:3px 9px; font-size:.75rem; font-weight:700; }
+    .on { background:rgba(16,185,129,.2); color:var(--ok); }
+    .off { background:rgba(239,68,68,.2); color:var(--bad); }
+    table { width:100%; border-collapse:collapse; margin-top:10px; font-size:.9rem; }
+    canvas { width:100%; max-width:100%; border:1px solid var(--line); border-radius:10px; background:var(--chip); margin-top:10px; }
+    th, td { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  </style>
+</head>
+<body>
+  <div id="loginWrap" class="wrap">
+    <section class="card" style="max-width:520px;margin:40px auto;">
+      <h2>Traveler Companion Login</h2>
+      <label>Email<input id="login_email" type="email" placeholder="admin@travelercompanion.com"></label>
+      <label>Password<input id="login_password" type="password" placeholder="admin123"></label>
+      <button id="loginBtn">Login</button>
+      <div id="loginFeedback" class="feedback">Default credentials: admin@travelercompanion.com / admin123</div>
+    </section>
+  </div>
+
+  <div id="appWrap" class="wrap hidden">
+    <div class="topbar">
+      <h1 data-i18n="appTitle">Aggregator Control Panel</h1>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <label style="margin:0;" data-i18n="language">Language
+          <select id="langSelect">
+            <option value="en">English</option>
+            <option value="pt-BR">Português (BR)</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="tl">Tagalog</option>
+            <option value="it">Italiano</option>
+          </select>
+        </label>
+        <button id="themeBtn" data-i18n="toggleTheme">Toggle Dark/Light</button>
+        <button id="logoutBtn" data-i18n="logout">Logout</button>
+      </div>
+    </div>
+
+    <div class="app-shell">
+    <nav class="menu card">
+      <button id="mainOperationsBtn" data-main="operations" class="active" data-i18n="menuOperations">Operations</button>
+      <button id="mainModerationBtn" data-main="moderation" data-i18n="menuModeration">Moderation</button>
+      <button id="mainMonitoringBtn" data-main="monitoring" data-i18n="menuMonitoring">Monitoring</button>
+      <button id="mainConfigurationBtn" data-main="configuration" data-i18n="menuConfiguration">Configuration</button>
+      <button id="mainSecurityBtn" data-main="security" data-i18n="menuSecurity">Security</button>
+    </nav>
+
+    <div>
+    <section class="card" style="padding:10px; margin-bottom:10px;">
+      <div id="subMenu" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </section>
+    <section id="tab-health" class="card">
+      <h3 data-i18n="healthCheckTitle">App Overview</h3>
+      <div class="status-grid">
+        <div class="stat"><span data-i18n="databaseLabel">Database:</span> <span id="dbChip" class="chip off">OFF</span></div>
+        <div class="stat"><span data-i18n="schedulerLabel">Scheduler:</span> <span id="schedChip" class="chip off">OFF</span></div>
+        <div class="stat"><span data-i18n="overloadRiskLabel">Overload Risk:</span> <strong id="overRisk">0%</strong></div>
+        <div class="stat"><span data-i18n="dbLatencyLabel">DB Latency:</span> <strong id="latency">-</strong> ms</div>
+      </div>
+      <div class="status-grid" id="portsGrid"></div>
+      <div id="healthError" class="feedback" data-i18n="noChecks">No checks executed yet.</div>
+      <button id="refreshStatus" data-i18n="refreshStatus">Refresh Status</button>
+      <button id="emuRestart" data-i18n="startEmulator">Start Emulator</button>
+      <button id="emuStop" data-i18n="stopEmulator">Stop Emulator</button>
+            <div class="feedback" id="sysUsageMeta" data-i18n="sysUsageDefault">CPU: - | RAM: -</div>
+      <canvas id="sysUsageChart" height="90"></canvas>
+          </section>
+
+    
+
+    
+
+    <section id="tab-config" class="card hidden">
+      <h3 data-i18n="configParameters">Configuration Parameters</h3>
+      <div class="row"><div><label data-i18n="appHostLabel">App Host IP<input id="app_host" data-i18n-placeholder="appHostPlaceholder"></label></div><div><label data-i18n="dbHostLabel">DB Host<input id="db_host" data-i18n-placeholder="dbHostPlaceholder"></label></div><div><label data-i18n="dbPortLabel">DB Port<input id="db_port" type="number" data-i18n-placeholder="dbPortPlaceholder"></label></div></div>
+      <div class="row"><div><label data-i18n="loginPortLabel">Login-server Port<input id="login_server_port" type="number" min="1" max="65535" placeholder="6900"></label></div><div><label data-i18n="charPortLabel">Char-server Port<input id="char_server_port" type="number" min="1" max="65535" placeholder="6121"></label></div><div><label data-i18n="mapPortLabel">Map-server Port<input id="map_server_port" type="number" min="1" max="65535" placeholder="5121"></label></div><div><label data-i18n="webServerPortLabel">Web-server Port<input id="web_server_port" type="number" min="1" max="65535" placeholder="8888"></label></div></div>
+      <div class="row"><div><label data-i18n="dbUserLabel">DB User<input id="db_user" data-i18n-placeholder="dbUserPlaceholder"></label></div><div><label data-i18n="dbPasswordLabel">DB Password<input id="db_password" type="password" data-i18n-placeholder="dbPasswordPlaceholder"></label></div></div>
+      <div class="row"><div><label data-i18n="dbNameLabel">DB Name<input id="db_name" data-i18n-placeholder="dbNamePlaceholder"></label></div><div><label data-i18n="logsDbNameLabel">Logs DB Name<input id="db_logs_name" placeholder="log" data-i18n-placeholder="logsDbNamePlaceholder"></label></div></div>
+      <div class="row"><div><label data-i18n="housekeepingLabel">Housekeeping Job (min)<input id="hk_sched" type="number"></label></div></div>
+      <div class="row"><div><label data-i18n="statusRefreshLabel">Status Refresh (sec)<input id="status_refresh_sec" type="number" min="5"></label></div><div><label data-i18n="offlineAlertLabel">Offline Alert Check (sec)<input id="offline_notify_sec" type="number" min="5"></label></div><div><label data-i18n="usageRefreshLabel">Usage Graph Refresh (sec)<input id="usage_refresh_sec" type="number" min="1"></label></div></div>
+      
+      <hr style="border-color:var(--line);margin:16px 0;">
+      <h4 data-i18n="proxyMonitoringTitle">Proxy Monitoring</h4>
+      <div id="proxyList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <button id="addProxyBtn" type="button" data-i18n="addProxy">Add Proxy</button>
+      <button id="saveCfg" data-i18n="saveConfiguration">Save Configuration</button>
+      <div id="cfgFeedback" class="feedback" data-i18n="configUnsaved">Configuration not saved in this session.</div>
+    </section>
+
+    <section id="tab-ip-check" class="card hidden">
+      <h3 data-i18n="ipCheck">IP Check</h3>
+      <label data-i18n="ipCheckSearch">Character name, Char ID or Account ID
+        <input id="ip_query" placeholder="e.g. character / 150000 / 200001" />
+      </label>
+      <button id="runIpCheck" data-i18n="runIpCheck">Run IP Check</button>
+      <div id="ipFeedback" class="feedback" data-i18n="ipNoCheck">No check yet.</div>
+      <table>
+        <thead><tr><th data-i18n="colChar">Char</th><th data-i18n="colCharId">Char ID</th><th data-i18n="colAccountId">Account ID</th><th data-i18n="colLastIp">Last IP</th><th data-i18n="colEmail">Email</th><th data-i18n="colBirthday">Birthday</th><th data-i18n="colSameUserPct">% Same User</th></tr></thead>
+        <tbody id="ipBody"></tbody>
+      </table>
+      <button id="logsMoreBtnBottom" data-i18n="viewMore" style="display:none;">View More</button>
+      <button id="logsScrollTopBtn" class="hidden" style="position:sticky;bottom:12px;float:right;" data-i18n="scrollTop">Scroll to Top</button>
+    </section>
+
+    <section id="tab-logs" class="card hidden">
+      <h3 data-i18n="logsHistory">Logs History</h3>
+      <div class="row">
+        <div><label data-i18n="logsSourceLabel">Source
+          <select id="logsSource">
+            <option value="actions" data-i18n="logsSourceActions">Platform Punishments</option>
+            <option value="atcommandlog">atcommandlog</option>
+            <option value="cashlog">cashlog</option>
+            <option value="chatlog">chatlog</option>
+            <option value="loginlog">loginlog</option>
+            <option value="npclog">npclog</option>
+            <option value="picklog">picklog</option>
+            <option value="zenylog">zenylog</option>
+          </select>
+        </label></div>
+        <div><label data-i18n="search">Search
+          <input id="logsSearch" placeholder="char name, charid, account, map, command..." />
+        </label></div>
+      </div>
+      <button id="refreshLogs" data-i18n="refreshLogs">Refresh Logs</button>
+      <div id="logsFeedback" class="feedback" data-i18n="logsNoData">No logs loaded.</div>
+      <button id="logsMoreBtn" data-i18n="viewMore">View More</button>
+      <table>
+        <thead><tr id="logsHead"></tr></thead>
+        <tbody id="logsBody"></tbody>
+      </table>
+    </section>
+
+    <section id="tab-player-control" class="card hidden">
+      <h3 data-i18n="playerControl">Player Control</h3>
+      <label data-i18n="characterSearchLabel">Character Search<input id="char_search" data-i18n-placeholder="characterSearchPlaceholder" /></label>
+      <label data-i18n="searchResultsLabel">Search Results<select id="char_pick"></select></label>
+      <div class="row">
+        <div><button id="addTarget" data-i18n="addTarget">Add Target</button></div>
+        <div><button id="checkStatus" data-i18n="checkStatus">Status</button></div>
+      </div>
+      <div id="statusFeedback" class="feedback" data-i18n="statusNoCheck">No status check yet.</div>
+      <table>
+        <thead><tr><th data-i18n="colChar">Char</th><th data-i18n="colCharId">Char ID</th><th data-i18n="colAccountId">Account ID</th><th data-i18n="colOnline">Online</th><th></th></tr></thead>
+        <tbody id="targetsBody"></tbody>
+      </table>
+      <label data-i18n="accountIdForUnbanLabel">Account ID (for unban)
+        <input id="account_id" type="number" min="0" data-i18n-placeholder="accountIdAutoFilledPlaceholder" />
+      </label>
+      <label data-i18n="decisionLabel">Decision
+        <select id="decision">
+          <option value="mute" data-i18n="decisionMute">Mute</option>
+          <option value="unmute" data-i18n="decisionUnmute">Unmute</option>
+          <option value="ban" data-i18n="decisionBan">Ban</option>
+          <option value="unflag" data-i18n="decisionUnflag">Unflag</option>
+          <option value="kick" data-i18n="decisionKick">Kick</option>
+          <option value="jail" data-i18n="decisionJail">Jail</option>
+          <option value="unjail" data-i18n="decisionUnjail">Unjail</option>
+          <option value="unban" data-i18n="decisionUnbanByAccount">Unban (by Account ID)</option>
+        </select>
+      </label>
+      <div class="row">
+        <div id="muteWrap"><label data-i18n="muteDurationLabel">Mute Duration (minutes)<input id="mute_minutes" type="number" min="1" value="10"></label></div>
+        <div id="banWrap" class="hidden"><label data-i18n="banDurationLabel">Ban Duration (days)<input id="ban_days" type="number" min="1" value="1"></label></div>
+      </div>
+      <label data-i18n="reasonModeLabel">Reason Mode
+        <select id="reason_mode">
+          <option value="log" data-i18n="reasonModeLogOnly">Log only</option>
+          <option value="notify" data-i18n="reasonModeNotify">Log + dispbottom to player</option>
+        </select>
+      </label>
+      <label data-i18n="reasonLabel">Reason<textarea id="reason" rows="3"></textarea></label>
+      <button id="sendDecision" data-i18n="submitAction">Submit Action</button>
+      <div id="actionFeedback" class="feedback" data-i18n="noActionSent">No action sent yet.</div>
+    </section>
+
+    <section id="tab-user-items" class="card hidden">
+      <h3 data-i18n="userItems">User Items</h3>
+      <div class="row">
+        <label data-i18n="userSearchLabel">User Search<input id="ui_search" data-i18n-placeholder="userSearchPlaceholder" /></label>
+        <button id="ui_search_btn" data-i18n="search">Search</button>
+      </div>
+      <div class="row">
+        <label data-i18n="characterLabel">Character
+          <select id="ui_char_pick"></select>
+        </label>
+        <label data-i18n="sessionLabel">Session
+          <select id="ui_section">
+            <option value="inventory">inventory</option>
+            <option value="cart">cart</option>
+            <option value="storage">storage</option>
+          </select>
+        </label>
+        <button id="ui_load" data-i18n="loadItems">Load Items</button>
+      </div>
+      <div id="ui_meta" class="feedback" data-i18n="noCharacterSelected">No character selected.</div>
+      <table>
+        <thead><tr><th data-i18n="colItem">Item</th><th data-i18n="colQty">Qty</th><th data-i18n="colRefine">Refine</th><th data-i18n="colCards">Cards</th><th data-i18n="colBonuses">Bonuses</th></tr></thead>
+        <tbody id="uiTable"></tbody>
+      </table>
+      <h4 data-i18n="itemLogs">Item Logs</h4>
+      <table>
+        <thead><tr><th data-i18n="colTime">Time</th><th data-i18n="logsSourceLabel">Source</th><th data-i18n="colType">Type</th><th data-i18n="colAmount">Amount</th><th data-i18n="colMap">Map</th></tr></thead>
+        <tbody id="uiLogTable"></tbody>
+      </table>
+      <button id="uiLogMoreBtn" data-i18n="viewMore">View More</button>
+    </section>
+
+    <section id="tab-webhooks" class="card hidden">
+      <h3 data-i18n="webhooks">Webhooks</h3>
+      <label data-i18n="discordWebhookUrl">Discord Webhook URL<input id="wh_discord"></label>
+      <label data-i18n="telegramWebhookUrl">Telegram Bot Webhook URL<input id="wh_telegram"></label>
+      <label><input id="wh_flagged" type="checkbox"> <span data-i18n="notifyFlaggedEvents">Notify flagged character events</span></label>
+      <label><input id="wh_mapdown" type="checkbox"> <span data-i18n="notifyAppProxyOffline">Notify App/Proxy crashes/offline</span></label>
+      <label><input id="wh_punishments" type="checkbox"> <span data-i18n="notifyPunishments">Notify character punishments</span></label>
+      <button id="saveHooks" data-i18n="saveWebhooks">Save Webhooks</button>
+      <div id="whFeedback" class="feedback" data-i18n="noWebhookChanges">No changes yet.</div>
+    </section>
+
+    
+    <section id="tab-automation" class="card hidden">
+      <h3 id="autoTitle">Automation Center (Watch Cases)</h3>
+      <div class="feedback" id="watchHowTo"></div>
+
+      <h4 id="autoSearchTitle" style="margin-top:12px;">1) Target Search</h4>
+      <div class="row">
+        <label id="watchSearchTypeLabel">Search Type
+          <select id="watch_search_type">
+            <option value="character">character</option>
+            <option value="account">account</option>
+            <option value="item">item</option>
+          </select>
+        </label>
+        <label id="watchQueryLabel">Query<input id="watch_search_q" placeholder="char name / charid / accountid / item id or name"></label>
+        <button id="watchSearchBtn" type="button">Search</button>
+      </div>
+      <label id="watchSearchResultsLabel">Results
+        <select id="watch_search_pick"></select>
+      </label>
+
+      <h4 id="autoCaseSetupTitle" style="margin-top:12px;">2) Case Setup</h4>
+      <div class="row">
+        <label id="watchTypeLabel">Type
+          <select id="watch_type">
+            <option value="character">character</option>
+            <option value="account">account</option>
+            <option value="item">item</option>
+          </select>
+        </label>
+        <label id="watchLabelLabel">Label<input id="watch_label" placeholder="e.g. suspect char / high-value item"></label>
+        <label id="watchFreqLabel">Frequency (sec)<input id="watch_freq" type="number" min="30" value="300"></label>
+      </div>
+      <div class="row">
+        <label id="watchCharIdLabel">Char ID<input id="watch_char_id" type="number" min="0" value="0"></label>
+        <label id="watchAccountIdLabel">Account ID<input id="watch_account_id" type="number" min="0" value="0"></label>
+        <label id="watchNameidLabel">Item ID (nameid)<input id="watch_nameid" type="number" min="0" value="0"></label>
+      </div>
+      <div class="row">
+        <label id="watchSeverityLabel">Severity
+          <select id="watch_severity">
+            <option value="low">low</option>
+            <option value="medium" selected>medium</option>
+            <option value="high">high</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="margin-top:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+        <label id="watchEnabledLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_enabled" type="checkbox" checked> Enabled (included in automatic scheduler checks)</label>
+        <label id="watchNotifyDiscordLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_notify_discord" type="checkbox" checked> Notify Discord on change</label>
+        <label id="watchNotifyTelegramLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_notify_telegram" type="checkbox" checked> Notify Telegram on change</label>
+        <label id="watchAutoRelatedLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_auto_related" type="checkbox"> Auto-create related watch cases</label>
+        <label id="watchMonitorAnyChangeLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_monitor_any_change" type="checkbox" checked> Monitor any meaningful change</label>
+        <label id="watchMonitorItemMovementLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_monitor_item_movement" type="checkbox"> Monitor item movement (picklog 1h)</label>
+        <label id="watchItemMovementThresholdLabel" style="display:flex;align-items:center;gap:8px;">Item movement threshold (1h)<input id="watch_item_movement_threshold" type="number" min="1" value="20"></label>
+        <label id="watchMonitorFailedLoginsLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_monitor_failed_logins" type="checkbox"> Monitor failed logins (1h)</label>
+        <label id="watchFailedLoginsThresholdLabel" style="display:flex;align-items:center;gap:8px;">Failed login threshold (1h)<input id="watch_failed_logins_threshold" type="number" min="1" value="5"></label>
+        <label id="watchMonitorZenyIncreaseLabel" style="display:flex;align-items:center;gap:8px;"><input id="watch_monitor_zeny_increase" type="checkbox"> Monitor zeny increase</label>
+        <label id="watchZenyIncreaseThresholdLabel" style="display:flex;align-items:center;gap:8px;">Zeny increase threshold<input id="watch_zeny_increase_threshold" type="number" min="1" value="1000000"></label>
+      </div>
+
+      <div class="row">
+        <label id="watchMaxRelatedLabel">Max related chars (when type=account)<input id="watch_max_related" type="number" min="1" max="20" value="3"></label>
+      </div>
+      <div class="feedback" id="watchAutoHelp"></div>
+      <label id="watchNotesLabel">Notes<textarea id="watch_notes" rows="2"></textarea></label>
+      <button id="createWatchCaseBtn" type="button">Create Watch Case</button>
+      <button id="refreshWatchCasesBtn" type="button">Refresh Cases</button>
+      <div id="watchFeedback" class="feedback">No watch cases loaded.</div>
+
+      <div class="row">
+        <label id="watchCaseFilterLabel">Find case by ID<input id="watch_case_filter" type="number" min="1" placeholder="e.g. 14"></label>
+      </div>
+
+      <table>
+        <thead><tr><th>ID</th><th>Type</th><th>Target</th><th>Every(s)</th><th>Severity</th><th>Enabled</th><th>Checks</th><th>Last Check</th><th>Last Notify</th><th>Actions</th></tr></thead>
+        <tbody id="watchCasesBody"></tbody>
+      </table>
+      <h4 id="watchCaseEventsTitle">Case Events</h4>
+      <table>
+        <thead><tr><th id="watchEventsTimeHead">Time</th><th id="watchEventsTypeHead">Type</th><th id="watchEventsSeverityHead">Severity</th><th id="watchEventsSummaryHead">Summary</th><th>D</th><th>T</th></tr></thead>
+        <tbody id="watchEventsBody"></tbody>
+      </table>
+    </section>
+
+    <div id="watchOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:9998;"></div>
+    <div id="watchModal" class="card hidden" style="position:fixed;z-index:9999;left:50%;top:50%;transform:translate(-50%,-50%);width:min(980px,95vw);max-height:86vh;overflow:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <h3 id="watchModalTitle">Preview</h3>
+        <button id="watchModalCloseBtn" type="button">Close</button>
+      </div>
+      <div id="watchModalBody" style="white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;line-height:1.45;"></div>
+    </div>
+
+    <section id="tab-manage-roles" class="card hidden">
+      <h3 data-i18n="manageRoles">Manage Roles</h3>
+      <div id="rolesFeedback" class="feedback" data-i18n="rolesNotLoaded">Role manager not loaded yet.</div>
+      <h4 data-i18n="rolePermissions">Role Permissions</h4>
+      <table>
+        <thead><tr><th data-i18n="permission">Permission</th><th data-i18n="communityManager">Community Manager</th><th data-i18n="gameMaster">Game Master</th><th data-i18n="administrator">Administrator</th></tr></thead>
+        <tbody id="rolesPermBody"></tbody>
+      </table>
+      <button id="saveRolesPermBtn" data-i18n="saveRolePermissions">Save Role Permissions</button>
+      <h4 data-i18n="userRoleAssignment">User Role Assignment</h4>
+      <table>
+        <thead><tr><th data-i18n="colEmail">Email</th><th data-i18n="role">Role</th><th data-i18n="active">Active</th><th data-i18n="action">Action</th></tr></thead>
+        <tbody id="rolesUsersBody"></tbody>
+      </table>
+    </section>
+
+    <section id="tab-account" class="card hidden">
+      <h3 data-i18n="accountSecurity">Account Security</h3>
+
+      <button id="toggleEmailChangeBtn" type="button" data-i18n="changeEmail">Change Email</button>
+      <div id="emailChangeWrap" class="hidden">
+        <label data-i18n="currentEmail">Current Email<input id="cur_email" type="email"></label>
+        <label data-i18n="newEmail">New Email<input id="new_email" type="email"></label>
+        <label data-i18n="confirmNewEmail">Confirm New Email<input id="confirm_email" type="email"></label>
+        <button id="changeEmailBtn" data-i18n="updateEmail">Update Email</button>
+      </div>
+
+      <button id="togglePassChangeBtn" type="button" data-i18n="changePassword">Change Password</button>
+      <div id="passChangeWrap" class="hidden">
+        <label data-i18n="currentPassword">Current Password<input id="cur_pass" type="password"></label>
+        <label data-i18n="newPassword">New Password<input id="new_pass" type="password"></label>
+        <label data-i18n="confirmNewPassword">Confirm New Password<input id="confirm_pass" type="password"></label>
+        <button id="changePassBtn" data-i18n="updatePassword">Update Password</button>
+      </div>
+
+      <div id="adminCreateUserWrap" class="hidden">
+        <h4 data-i18n="createNewAccount">Create New Account</h4>
+        <label data-i18n="colEmail">Email<input id="new_user_email" type="email"></label>
+        <label data-i18n="passwordLabel">Password<input id="new_user_password" type="password"></label>
+        <label data-i18n="role">Role
+          <select id="new_user_role">
+            <option value="community_manager">community_manager</option>
+            <option value="game_master">game_master</option>
+            <option value="administrator">administrator</option>
+          </select>
+        </label>
+        <button id="createUserBtn" type="button" data-i18n="createAccount">Create Account</button>
+      </div>
+
+      <div id="acctFeedback" class="feedback" data-i18n="securitySettingsUnchanged">Security settings unchanged.</div>
+    </section>
+
+    <section id="tab-readme" class="card hidden">
+      <h3 data-i18n="footerReadme">Open panel README</h3>
+      <pre id="readmeContent" style="white-space:pre-wrap;max-height:65vh;overflow:auto;"></pre>
+    </section>
+    </div>
+  </div>
+  </div>
+  <footer class="wrap" style="margin-top:8px;padding-top:8px;padding-bottom:20px;">
+    <section class="card">
+      <h3 data-i18n="footerTitle">Resources</h3>
+      <ul>
+        <li data-i18n="footerBullet1">Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.</li>
+        <li data-i18n="footerBullet2">Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.</li>
+        <li data-i18n="footerBullet3">Webhook notifications support offline monitoring and punishment auditing with structured payloads.</li>
+      </ul>
+      <button id="openReadme" type="button" data-i18n="footerReadme">Open panel README</button>
+    </section>
+  </footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let TOKEN = localStorage.getItem('tc_token') || '';
+let TARGETS = [];
+let LANG = localStorage.getItem('tc_lang') || 'en';
+let STATUS_INTERVAL = null;
+let OFFLINE_NOTIFY_INTERVAL = null;
+let USAGE_INTERVAL = null;
+let PROXIES = [];
+const usageSeries = {cpu: [], ram: [], labels: []};
+let LOGS_OFFSET = 0;
+let CURRENT_USER = null;
+let ROLES_CONFIG = null;
+let ITEM_LOG_OFFSET = 0;
+let ITEM_LOG_CHAR_ID = 0;
+let ITEM_LOG_NAMEID = 0;
+const authHeaders = () => ({'Authorization': `Bearer ${TOKEN}`, 'X-TC-Lang': LANG});
+const setFeedback = (id, msg) => { $(id).textContent = msg; };
+function proxyCard(p = {name:'Proxy', country_name:'Unknown', country_emoji:'🌐', host:'127.0.0.1', port:0}){
+  return `<div class="card" style="padding:10px;margin:0;">
+    <div class="row">
+      <label>${t('proxyName')}<input class="proxy_name" value="${p.name||''}"></label>
+      <label>${t('proxyCountry')}<input class="proxy_country" value="${p.country_name||''}"></label>
+      <label>${t('proxyFlag')}<input class="proxy_emoji" value="${p.country_emoji||''}"></label>
+    </div>
+    <div class="row">
+      <label>${t('proxyHost')}<input class="proxy_host" value="${p.host||''}"></label>
+      <label>${t('proxyPort')}<input class="proxy_port" type="number" min="0" max="65535" value="${Number(p.port||0)}"></label>
+      <div style="display:flex;align-items:end;"><button type="button" class="remove_proxy">${t('removeProxy')}</button></div>
+    </div>
+    <div class="feedback">${p.country_emoji||'🌐'} ${p.country_name||'Unknown'}</div>
+  </div>`;
+}
+
+function renderProxies(){
+  const root = $('proxyList'); if(!root) return;
+  root.innerHTML = PROXIES.map(proxyCard).join('');
+  root.querySelectorAll('.remove_proxy').forEach((btn,idx)=>btn.onclick=()=>{PROXIES.splice(idx,1); renderProxies();});
+}
+
+function collectProxiesFromForm(){
+  const rows = [...$('proxyList').children];
+  return rows.map(row=>({
+    name: row.querySelector('.proxy_name')?.value || 'Proxy',
+    country_name: row.querySelector('.proxy_country')?.value || 'Unknown',
+    country_emoji: row.querySelector('.proxy_emoji')?.value || '🌐',
+    host: row.querySelector('.proxy_host')?.value || '127.0.0.1',
+    port: Number(row.querySelector('.proxy_port')?.value || 0),
+  }));
+}
+
+
+const I18N = {
+  en: {appTitle:'Aggregator Control Panel', menuOperations:'Operations', menuModeration:'Moderation', menuMonitoring:'Monitoring', menuConfiguration:'Configuration', menuSecurity:'Security', automationCenter:'Automation Center', playerControl:'Player Control', ipCheck:'IP Check', logsHistory:'Logs History', healthCheck:'App Overview', configAI:'Configuration', webhooks:'Webhooks', account:'Account', manageRoles:'Manage Roles', accountSecurity:'Account Security', toggleTheme:'Toggle Dark/Light', logout:'Logout', language:'Language', runIpCheck:'Run IP Check', addTarget:'Add Target', checkStatus:'Status', healthCheckTitle:'App Overview', refreshStatus:'Refresh Status', refreshLogs:'Refresh Logs', startEmulator:'Start Emulator', stopEmulator:'Stop Emulator', scrollTop:'Scroll to Top', noChecks:'No checks executed yet.', systemsChecked:'Systems checked successfully.', error:'Error', configSaved:'Configuration saved successfully.', configUnsaved:'Configuration not saved in this session.', webhooksSaved:'Webhook settings saved.', noWebhookChanges:'No changes yet.', userItems:'User Items', ipNoCheck:'No check yet.', logsNoData:'No logs loaded.', statusNoCheck:'No status check yet.', noActionSent:'No action sent yet.', noCharacterSelected:'No character selected.', securitySettingsUnchanged:'Security settings unchanged.', rolesNotLoaded:'Role manager not loaded yet.', search:'Search', loadItems:'Load Items', viewMore:'View More', loadMapTail:'Load map-server last 20 lines', mapServerLiveLogs:'Map-server Live Logs', liveLogsWaiting:'Waiting for map-server output...', configParameters:'Configuration Parameters', dbHostLabel:'DB Host', dbPortLabel:'DB Port', loginPortLabel:'Login-server Port', charPortLabel:'Char-server Port', mapPortLabel:'Map-server Port', webServerPortLabel:'Web-server Port', dbUserLabel:'DB User', dbPasswordLabel:'DB Password', dbNameLabel:'DB Name', logsDbNameLabel:'Logs DB Name', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Status Refresh (sec)', offlineAlertLabel:'Offline Alert Check (sec)', usageRefreshLabel:'Usage Graph Refresh (sec)', saveConfiguration:'Save Configuration', appHostLabel:'App Host IP', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'database password', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Character name, Char ID or Account ID', characterSearchLabel:'Character Search', characterSearchPlaceholder:'Type part of character name', searchResultsLabel:'Search Results', accountIdForUnbanLabel:'Account ID (for unban)', accountIdAutoFilledPlaceholder:'Auto-filled from selected character', decisionLabel:'Decision', decisionMute:'Mute', decisionUnmute:'Unmute', decisionBan:'Ban', decisionUnflag:'Unflag', decisionKick:'Kick', decisionJail:'Jail', decisionUnjail:'Unjail', decisionUnbanByAccount:'Unban (by Account ID)', muteDurationLabel:'Mute Duration (minutes)', banDurationLabel:'Ban Duration (days)', reasonModeLabel:'Reason Mode', reasonModeLogOnly:'Log only', reasonModeNotify:'Log + dispbottom to player', reasonLabel:'Reason', submitAction:'Submit Action', logsSourceLabel:'Source', logsSourceActions:'Platform Punishments', userSearchLabel:'User Search', userSearchPlaceholder:'Nickname, Char ID or Account ID', characterLabel:'Character', sessionLabel:'Session', itemLogs:'Item Logs', discordWebhookUrl:'Discord Webhook URL', telegramWebhookUrl:'Telegram Bot Webhook URL', notifyFlaggedEvents:'Notify flagged character events', notifyAppProxyOffline:'Notify App/Proxy crashes/offline', notifyPunishments:'Notify character punishments', saveWebhooks:'Save Webhooks', rolePermissions:'Role Permissions', userRoleAssignment:'User Role Assignment', permission:'Permission', communityManager:'Community Manager', gameMaster:'Game Master', administrator:'Administrator', role:'Role', active:'Active', action:'Action', saveRolePermissions:'Save Role Permissions', changeEmail:'Change Email', currentEmail:'Current Email', newEmail:'New Email', confirmNewEmail:'Confirm New Email', updateEmail:'Update Email', changePassword:'Change Password', currentPassword:'Current Password', newPassword:'New Password', confirmNewPassword:'Confirm New Password', updatePassword:'Update Password', createNewAccount:'Create New Account', passwordLabel:'Password', createAccount:'Create Account', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Last IP', colEmail:'Email', colBirthday:'Birthday', colSameUserPct:'% Same User', colOnline:'Online', colItem:'Item', colQty:'Qty', colRefine:'Refine', colCards:'Cards', colBonuses:'Bonuses', colTime:'Time', colType:'Type', colAmount:'Amount', colMap:'Map', databaseLabel:'Database:', schedulerLabel:'Scheduler:', overloadRiskLabel:'Overload Risk:', dbLatencyLabel:'DB Latency:', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Proxy Monitoring', addProxy:'Add Proxy', proxyName:'Proxy Name', proxyCountry:'Country', proxyFlag:'Flag Emoji', proxyHost:'Host', proxyPort:'Port', removeProxy:'Remove', proxyLatency:'Latency', footerTitle:'Resources', footerReadme:'Open panel README', footerBullet1:'Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.', footerBullet2:'Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.', footerBullet3:'Webhook notifications support offline monitoring and punishment auditing with structured payloads.'},
+  'pt-BR': {appTitle:'Painel de Controle do Agregador', playerControl:'Controle de Jogadores', ipCheck:'Checagem de IP', logsHistory:'Histórico de Logs', healthCheck:'Visão Geral do App', configAI:'Configuração', webhooks:'Webhooks', account:'Conta', manageRoles:'Gerenciar Papéis', accountSecurity:'Segurança da Conta', toggleTheme:'Tema Claro/Escuro', logout:'Sair', language:'Idioma', runIpCheck:'Executar Checagem', addTarget:'Adicionar Alvo', checkStatus:'Status', healthCheckTitle:'Visão Geral do App', refreshStatus:'Atualizar Status', refreshLogs:'Atualizar Logs', startEmulator:'Iniciar Emulador', stopEmulator:'Parar Emulador', scrollTop:'Voltar ao topo', noChecks:'Nenhuma verificação executada.', systemsChecked:'Sistemas verificados com sucesso.', error:'Erro', configSaved:'Configuração salva com sucesso.', configUnsaved:'Configuração não salva nesta sessão.', webhooksSaved:'Configurações de webhook salvas.', noWebhookChanges:'Nenhuma alteração ainda.', userItems:'Itens do Usuário', ipNoCheck:'Nenhuma checagem ainda.', logsNoData:'Nenhum log carregado.', statusNoCheck:'Nenhuma checagem de status ainda.', noActionSent:'Nenhuma ação enviada ainda.', noCharacterSelected:'Nenhum personagem selecionado.', securitySettingsUnchanged:'Configurações de segurança inalteradas.', rolesNotLoaded:'Gerenciador de papéis ainda não carregado.', search:'Buscar', loadItems:'Carregar Itens', viewMore:'Ver mais', loadMapTail:'Carregar últimas 20 linhas do map-server', mapServerLiveLogs:'Logs em tempo real do map-server', liveLogsWaiting:'Aguardando saída do map-server...', configParameters:'Parâmetros de Configuração', dbHostLabel:'Host do DB', dbPortLabel:'Porta do DB', loginPortLabel:'Porta do Login-server', charPortLabel:'Porta do Char-server', mapPortLabel:'Porta do Map-server', webServerPortLabel:'Porta do Web-server', dbUserLabel:'Usuário do DB', dbPasswordLabel:'Senha do DB', dbNameLabel:'Nome do DB', logsDbNameLabel:'Nome do DB de Logs', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Atualização de Status (seg)', offlineAlertLabel:'Verificação de Alerta Offline (seg)', usageRefreshLabel:'Atualização do Gráfico de Uso (seg)', saveConfiguration:'Salvar Configuração', appHostLabel:'IP do Host da App', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'senha do banco de dados', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Nome do personagem, Char ID ou Account ID', characterSearchLabel:'Busca de Personagem', characterSearchPlaceholder:'Digite parte do nome do personagem', searchResultsLabel:'Resultados da Busca', accountIdForUnbanLabel:'Account ID (para unban)', accountIdAutoFilledPlaceholder:'Preenchido automaticamente a partir do personagem selecionado', decisionLabel:'Decisão', decisionMute:'Mutar', decisionUnmute:'Desmutar', decisionBan:'Banir', decisionUnflag:'Remover flag', decisionKick:'Expulsar', decisionJail:'Prender', decisionUnjail:'Soltar', decisionUnbanByAccount:'Desbanir (por Account ID)', muteDurationLabel:'Duração do mute (minutos)', banDurationLabel:'Duração do ban (dias)', reasonModeLabel:'Modo do motivo', reasonModeLogOnly:'Somente log', reasonModeNotify:'Log + dispbottom para o jogador', reasonLabel:'Motivo', submitAction:'Enviar Ação', logsSourceLabel:'Origem', logsSourceActions:'Punições da Plataforma', userSearchLabel:'Busca de Usuário', userSearchPlaceholder:'Apelido, Char ID ou Account ID', characterLabel:'Personagem', sessionLabel:'Sessão', itemLogs:'Logs de Itens', discordWebhookUrl:'URL do Webhook do Discord', telegramWebhookUrl:'URL do Webhook do Bot Telegram', notifyFlaggedEvents:'Notificar eventos de personagens marcados', notifyAppProxyOffline:'Notificar quedas/offline da App/Proxy', notifyPunishments:'Notificar punições de personagens', saveWebhooks:'Salvar Webhooks', rolePermissions:'Permissões de Papéis', userRoleAssignment:'Atribuição de Papel de Usuário', permission:'Permissão', communityManager:'Gerente de Comunidade', gameMaster:'Game Master', administrator:'Administrador', role:'Papel', active:'Ativo', action:'Ação', saveRolePermissions:'Salvar Permissões de Papéis', changeEmail:'Alterar E-mail', currentEmail:'E-mail Atual', newEmail:'Novo E-mail', confirmNewEmail:'Confirmar Novo E-mail', updateEmail:'Atualizar E-mail', changePassword:'Alterar Senha', currentPassword:'Senha Atual', newPassword:'Nova Senha', confirmNewPassword:'Confirmar Nova Senha', updatePassword:'Atualizar Senha', createNewAccount:'Criar Nova Conta', passwordLabel:'Senha', createAccount:'Criar Conta', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Último IP', colEmail:'E-mail', colBirthday:'Aniversário', colSameUserPct:'% Mesmo Usuário', colOnline:'Online', colItem:'Item', colQty:'Qtd', colRefine:'Refino', colCards:'Cartas', colBonuses:'Bônus', colTime:'Hora', colType:'Tipo', colAmount:'Quantidade', colMap:'Mapa', databaseLabel:'Banco de Dados:', schedulerLabel:'Agendador:', overloadRiskLabel:'Risco de Sobrecarga:', dbLatencyLabel:'Latência do DB:', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Monitoramento de Proxy', addProxy:'Adicionar Proxy', proxyName:'Nome do Proxy', proxyCountry:'País', proxyFlag:'Emoji da Bandeira', proxyHost:'Host', proxyPort:'Porta', removeProxy:'Remover', proxyLatency:'Latency', footerTitle:'Recursos', footerReadme:'Abrir README do painel', footerBullet1:'Configure credenciais de banco e portas do emulador na Configuração antes de usar IP, itens e logs.', footerBullet2:'Use a Visão Geral para monitorar saúde dos serviços, CPU/RAM e logs em tempo real do map-server.', footerBullet3:'Webhooks suportam monitoramento offline e auditoria de punições com payload estruturado.'},
+  es: {appTitle:'Panel de Control del Agregador', playerControl:'Control de Jugadores', ipCheck:'Verificación de IP', logsHistory:'Historial de Logs', healthCheck:'Resumen de la App', configAI:'Configuración', webhooks:'Webhooks', account:'Cuenta', manageRoles:'Gestionar Roles', accountSecurity:'Seguridad de la Cuenta', toggleTheme:'Alternar Claro/Oscuro', logout:'Cerrar sesión', language:'Idioma', runIpCheck:'Ejecutar Verificación', addTarget:'Agregar Objetivo', checkStatus:'Status', healthCheckTitle:'App Overview', refreshStatus:'Actualizar Estado', refreshLogs:'Actualizar Logs', startEmulator:'Iniciar Emulador', stopEmulator:'Detener Emulador', scrollTop:'Volver arriba', noChecks:'No checks executed yet.', systemsChecked:'Systems checked successfully.', error:'Error', configSaved:'Configuration saved successfully.', configUnsaved:'Configuration not saved in this session.', webhooksSaved:'Webhook settings saved.', noWebhookChanges:'No changes yet.', userItems:'User Items', ipNoCheck:'No check yet.', logsNoData:'No logs loaded.', statusNoCheck:'No status check yet.', noActionSent:'No action sent yet.', noCharacterSelected:'No character selected.', securitySettingsUnchanged:'Security settings unchanged.', rolesNotLoaded:'Role manager not loaded yet.', search:'Buscar', loadItems:'Cargar Ítems', viewMore:'Ver más', loadMapTail:'Load map-server last 20 lines', mapServerLiveLogs:'Map-server Live Logs', liveLogsWaiting:'Waiting for map-server output...', configParameters:'Configuration Parameters', dbHostLabel:'DB Host', dbPortLabel:'DB Port', loginPortLabel:'Login-server Port', charPortLabel:'Char-server Port', mapPortLabel:'Map-server Port', webServerPortLabel:'Web-server Port', dbUserLabel:'DB User', dbPasswordLabel:'DB Password', dbNameLabel:'DB Name', logsDbNameLabel:'Logs DB Name', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Status Refresh (sec)', offlineAlertLabel:'Offline Alert Check (sec)', usageRefreshLabel:'Usage Graph Refresh (sec)', saveConfiguration:'Guardar Configuración', appHostLabel:'App Host IP', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'database password', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Character name, Char ID or Account ID', characterSearchLabel:'Character Search', characterSearchPlaceholder:'Type part of character name', searchResultsLabel:'Search Results', accountIdForUnbanLabel:'Account ID (for unban)', accountIdAutoFilledPlaceholder:'Auto-filled from selected character', decisionLabel:'Decision', decisionMute:'Mute', decisionUnmute:'Unmute', decisionBan:'Ban', decisionUnflag:'Unflag', decisionKick:'Kick', decisionJail:'Jail', decisionUnjail:'Unjail', decisionUnbanByAccount:'Unban (by Account ID)', muteDurationLabel:'Mute Duration (minutes)', banDurationLabel:'Ban Duration (days)', reasonModeLabel:'Reason Mode', reasonModeLogOnly:'Log only', reasonModeNotify:'Log + dispbottom to player', reasonLabel:'Reason', submitAction:'Submit Action', logsSourceLabel:'Source', logsSourceActions:'Platform Punishments', userSearchLabel:'User Search', userSearchPlaceholder:'Nickname, Char ID or Account ID', characterLabel:'Character', sessionLabel:'Session', itemLogs:'Item Logs', discordWebhookUrl:'Discord Webhook URL', telegramWebhookUrl:'Telegram Bot Webhook URL', notifyFlaggedEvents:'Notify flagged character events', notifyAppProxyOffline:'Notify App/Proxy crashes/offline', notifyPunishments:'Notify character punishments', saveWebhooks:'Guardar Webhooks', rolePermissions:'Permisos de Roles', userRoleAssignment:'Asignación de Rol de Usuario', permission:'Permission', communityManager:'Community Manager', gameMaster:'Game Master', administrator:'Administrator', role:'Role', active:'Active', action:'Action', saveRolePermissions:'Guardar Permisos de Roles', changeEmail:'Cambiar Correo', currentEmail:'Current Email', newEmail:'New Email', confirmNewEmail:'Confirm New Email', updateEmail:'Update Email', changePassword:'Cambiar Contraseña', currentPassword:'Current Password', newPassword:'New Password', confirmNewPassword:'Confirm New Password', updatePassword:'Update Password', createNewAccount:'Crear Nueva Cuenta', passwordLabel:'Password', createAccount:'Crear Cuenta', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Last IP', colEmail:'Email', colBirthday:'Birthday', colSameUserPct:'% Same User', colOnline:'Online', colItem:'Item', colQty:'Qty', colRefine:'Refine', colCards:'Cards', colBonuses:'Bonuses', colTime:'Time', colType:'Type', colAmount:'Amount', colMap:'Map', databaseLabel:'Base de Datos:', schedulerLabel:'Programador:', overloadRiskLabel:'Riesgo de Sobrecarga:', dbLatencyLabel:'Latencia DB:', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Proxy Monitoring', addProxy:'Add Proxy', proxyName:'Proxy Name', proxyCountry:'Country', proxyFlag:'Flag Emoji', proxyHost:'Host', proxyPort:'Port', removeProxy:'Remove', proxyLatency:'Latency', footerTitle:'Recursos', footerReadme:'Abrir README del panel', footerBullet1:'Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.', footerBullet2:'Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.', footerBullet3:'Webhook notifications support offline monitoring and punishment auditing with structured payloads.'},
+  fr: {appTitle:'Panneau de Contrôle Agrégateur', playerControl:'Contrôle des Joueurs', ipCheck:'Vérification IP', logsHistory:'Historique des Logs', healthCheck:'Vue d’Ensemble', configAI:'Configuration', webhooks:'Webhooks', account:'Compte', manageRoles:'Gérer les Rôles', accountSecurity:'Sécurité du Compte', toggleTheme:'Basculer Clair/Sombre', logout:'Déconnexion', language:'Langue', runIpCheck:'Lancer la Vérification', addTarget:'Ajouter une Cible', checkStatus:'Status', healthCheckTitle:'App Overview', refreshStatus:'Actualiser le Statut', refreshLogs:'Actualiser les Logs', startEmulator:'Démarrer l’Émulateur', stopEmulator:'Arrêter l’Émulateur', scrollTop:'Retour en haut', noChecks:'No checks executed yet.', systemsChecked:'Systems checked successfully.', error:'Error', configSaved:'Configuration saved successfully.', configUnsaved:'Configuration not saved in this session.', webhooksSaved:'Webhook settings saved.', noWebhookChanges:'No changes yet.', userItems:'User Items', ipNoCheck:'No check yet.', logsNoData:'No logs loaded.', statusNoCheck:'No status check yet.', noActionSent:'No action sent yet.', noCharacterSelected:'No character selected.', securitySettingsUnchanged:'Security settings unchanged.', rolesNotLoaded:'Role manager not loaded yet.', search:'Rechercher', loadItems:'Charger les Objets', viewMore:'Voir plus', loadMapTail:'Load map-server last 20 lines', mapServerLiveLogs:'Map-server Live Logs', liveLogsWaiting:'Waiting for map-server output...', configParameters:'Configuration Parameters', dbHostLabel:'DB Host', dbPortLabel:'DB Port', loginPortLabel:'Login-server Port', charPortLabel:'Char-server Port', mapPortLabel:'Map-server Port', webServerPortLabel:'Web-server Port', dbUserLabel:'DB User', dbPasswordLabel:'DB Password', dbNameLabel:'DB Name', logsDbNameLabel:'Logs DB Name', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Status Refresh (sec)', offlineAlertLabel:'Offline Alert Check (sec)', usageRefreshLabel:'Usage Graph Refresh (sec)', saveConfiguration:'Enregistrer la Configuration', appHostLabel:'App Host IP', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'database password', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Character name, Char ID or Account ID', characterSearchLabel:'Character Search', characterSearchPlaceholder:'Type part of character name', searchResultsLabel:'Search Results', accountIdForUnbanLabel:'Account ID (for unban)', accountIdAutoFilledPlaceholder:'Auto-filled from selected character', decisionLabel:'Decision', decisionMute:'Mute', decisionUnmute:'Unmute', decisionBan:'Ban', decisionUnflag:'Unflag', decisionKick:'Kick', decisionJail:'Jail', decisionUnjail:'Unjail', decisionUnbanByAccount:'Unban (by Account ID)', muteDurationLabel:'Mute Duration (minutes)', banDurationLabel:'Ban Duration (days)', reasonModeLabel:'Reason Mode', reasonModeLogOnly:'Log only', reasonModeNotify:'Log + dispbottom to player', reasonLabel:'Reason', submitAction:'Submit Action', logsSourceLabel:'Source', logsSourceActions:'Platform Punishments', userSearchLabel:'User Search', userSearchPlaceholder:'Nickname, Char ID or Account ID', characterLabel:'Character', sessionLabel:'Session', itemLogs:'Item Logs', discordWebhookUrl:'Discord Webhook URL', telegramWebhookUrl:'Telegram Bot Webhook URL', notifyFlaggedEvents:'Notify flagged character events', notifyAppProxyOffline:'Notify App/Proxy crashes/offline', notifyPunishments:'Notify character punishments', saveWebhooks:'Enregistrer les Webhooks', rolePermissions:'Permissions des Rôles', userRoleAssignment:'Affectation des Rôles', permission:'Permission', communityManager:'Community Manager', gameMaster:'Game Master', administrator:'Administrator', role:'Role', active:'Active', action:'Action', saveRolePermissions:'Enregistrer les Permissions', changeEmail:'Changer l’Email', currentEmail:'Current Email', newEmail:'New Email', confirmNewEmail:'Confirm New Email', updateEmail:'Update Email', changePassword:'Changer le Mot de passe', currentPassword:'Current Password', newPassword:'New Password', confirmNewPassword:'Confirm New Password', updatePassword:'Update Password', createNewAccount:'Créer un Nouveau Compte', passwordLabel:'Password', createAccount:'Créer un Compte', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Last IP', colEmail:'Email', colBirthday:'Birthday', colSameUserPct:'% Same User', colOnline:'Online', colItem:'Item', colQty:'Qty', colRefine:'Refine', colCards:'Cards', colBonuses:'Bonuses', colTime:'Time', colType:'Type', colAmount:'Amount', colMap:'Map', databaseLabel:'Base de Données :', schedulerLabel:'Planificateur :', overloadRiskLabel:'Risque de Surcharge :', dbLatencyLabel:'Latence BD :', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Proxy Monitoring', addProxy:'Add Proxy', proxyName:'Proxy Name', proxyCountry:'Country', proxyFlag:'Flag Emoji', proxyHost:'Host', proxyPort:'Port', removeProxy:'Remove', proxyLatency:'Latency', footerTitle:'Ressources', footerReadme:'Ouvrir le README du panneau', footerBullet1:'Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.', footerBullet2:'Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.', footerBullet3:'Webhook notifications support offline monitoring and punishment auditing with structured payloads.'},
+  de: {appTitle:'Aggregator-Kontrollpanel', playerControl:'Spielersteuerung', ipCheck:'IP-Prüfung', logsHistory:'Log-Verlauf', healthCheck:'App-Übersicht', configAI:'Konfiguration', webhooks:'Webhooks', account:'Konto', manageRoles:'Rollen verwalten', accountSecurity:'Kontosicherheit', toggleTheme:'Hell/Dunkel umschalten', logout:'Abmelden', language:'Sprache', runIpCheck:'IP-Prüfung starten', addTarget:'Ziel hinzufügen', checkStatus:'Status', healthCheckTitle:'App Overview', refreshStatus:'Status aktualisieren', refreshLogs:'Logs aktualisieren', startEmulator:'Emulator starten', stopEmulator:'Emulator stoppen', scrollTop:'Nach oben', noChecks:'No checks executed yet.', systemsChecked:'Systems checked successfully.', error:'Error', configSaved:'Configuration saved successfully.', configUnsaved:'Configuration not saved in this session.', webhooksSaved:'Webhook settings saved.', noWebhookChanges:'No changes yet.', userItems:'User Items', ipNoCheck:'No check yet.', logsNoData:'No logs loaded.', statusNoCheck:'No status check yet.', noActionSent:'No action sent yet.', noCharacterSelected:'No character selected.', securitySettingsUnchanged:'Security settings unchanged.', rolesNotLoaded:'Role manager not loaded yet.', search:'Suchen', loadItems:'Items laden', viewMore:'Mehr anzeigen', loadMapTail:'Load map-server last 20 lines', mapServerLiveLogs:'Map-server Live Logs', liveLogsWaiting:'Waiting for map-server output...', configParameters:'Configuration Parameters', dbHostLabel:'DB Host', dbPortLabel:'DB Port', loginPortLabel:'Login-server Port', charPortLabel:'Char-server Port', mapPortLabel:'Map-server Port', webServerPortLabel:'Web-server Port', dbUserLabel:'DB User', dbPasswordLabel:'DB Password', dbNameLabel:'DB Name', logsDbNameLabel:'Logs DB Name', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Status Refresh (sec)', offlineAlertLabel:'Offline Alert Check (sec)', usageRefreshLabel:'Usage Graph Refresh (sec)', saveConfiguration:'Konfiguration speichern', appHostLabel:'App Host IP', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'database password', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Character name, Char ID or Account ID', characterSearchLabel:'Character Search', characterSearchPlaceholder:'Type part of character name', searchResultsLabel:'Search Results', accountIdForUnbanLabel:'Account ID (for unban)', accountIdAutoFilledPlaceholder:'Auto-filled from selected character', decisionLabel:'Decision', decisionMute:'Mute', decisionUnmute:'Unmute', decisionBan:'Ban', decisionUnflag:'Unflag', decisionKick:'Kick', decisionJail:'Jail', decisionUnjail:'Unjail', decisionUnbanByAccount:'Unban (by Account ID)', muteDurationLabel:'Mute Duration (minutes)', banDurationLabel:'Ban Duration (days)', reasonModeLabel:'Reason Mode', reasonModeLogOnly:'Log only', reasonModeNotify:'Log + dispbottom to player', reasonLabel:'Reason', submitAction:'Submit Action', logsSourceLabel:'Source', logsSourceActions:'Platform Punishments', userSearchLabel:'User Search', userSearchPlaceholder:'Nickname, Char ID or Account ID', characterLabel:'Character', sessionLabel:'Session', itemLogs:'Item Logs', discordWebhookUrl:'Discord Webhook URL', telegramWebhookUrl:'Telegram Bot Webhook URL', notifyFlaggedEvents:'Notify flagged character events', notifyAppProxyOffline:'Notify App/Proxy crashes/offline', notifyPunishments:'Notify character punishments', saveWebhooks:'Webhooks speichern', rolePermissions:'Rollenberechtigungen', userRoleAssignment:'Benutzerrollen-Zuweisung', permission:'Permission', communityManager:'Community Manager', gameMaster:'Game Master', administrator:'Administrator', role:'Role', active:'Active', action:'Action', saveRolePermissions:'Rollenrechte speichern', changeEmail:'E-Mail ändern', currentEmail:'Current Email', newEmail:'New Email', confirmNewEmail:'Confirm New Email', updateEmail:'Update Email', changePassword:'Passwort ändern', currentPassword:'Current Password', newPassword:'New Password', confirmNewPassword:'Confirm New Password', updatePassword:'Update Password', createNewAccount:'Neues Konto erstellen', passwordLabel:'Password', createAccount:'Konto erstellen', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Last IP', colEmail:'Email', colBirthday:'Birthday', colSameUserPct:'% Same User', colOnline:'Online', colItem:'Item', colQty:'Qty', colRefine:'Refine', colCards:'Cards', colBonuses:'Bonuses', colTime:'Time', colType:'Type', colAmount:'Amount', colMap:'Map', databaseLabel:'Datenbank:', schedulerLabel:'Planer:', overloadRiskLabel:'Überlastungsrisiko:', dbLatencyLabel:'DB-Latenz:', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Proxy Monitoring', addProxy:'Add Proxy', proxyName:'Proxy Name', proxyCountry:'Country', proxyFlag:'Flag Emoji', proxyHost:'Host', proxyPort:'Port', removeProxy:'Remove', proxyLatency:'Latency', footerTitle:'Ressourcen', footerReadme:'Panel-README öffnen', footerBullet1:'Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.', footerBullet2:'Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.', footerBullet3:'Webhook notifications support offline monitoring and punishment auditing with structured payloads.'},
+  tl: {appTitle:'Aggregator Control Panel', playerControl:'Kontrol ng Manlalaro', ipCheck:'Suriin ang IP', logsHistory:'Kasaysayan ng Logs', healthCheck:'Pangkalahatang-ideya ng App', configAI:'Konpigurasyon', webhooks:'Webhooks', account:'Account', manageRoles:'Pamahalaan ang Mga Role', accountSecurity:'Seguridad ng Account', toggleTheme:'I-toggle ang Maliwanag/Madilim', logout:'Mag-logout', language:'Wika', runIpCheck:'Patakbuhin ang Suriin ng IP', addTarget:'Magdagdag ng Target', checkStatus:'Status', healthCheckTitle:'App Overview', refreshStatus:'I-refresh ang Status', refreshLogs:'I-refresh ang Logs', startEmulator:'Simulan ang Emulator', stopEmulator:'Ihinto ang Emulator', scrollTop:'Bumalik sa Itaas', noChecks:'No checks executed yet.', systemsChecked:'Systems checked successfully.', error:'Error', configSaved:'Configuration saved successfully.', configUnsaved:'Configuration not saved in this session.', webhooksSaved:'Webhook settings saved.', noWebhookChanges:'No changes yet.', userItems:'User Items', ipNoCheck:'No check yet.', logsNoData:'No logs loaded.', statusNoCheck:'No status check yet.', noActionSent:'No action sent yet.', noCharacterSelected:'No character selected.', securitySettingsUnchanged:'Security settings unchanged.', rolesNotLoaded:'Role manager not loaded yet.', search:'Maghanap', loadItems:'I-load ang Mga Item', viewMore:'Tingnan pa', loadMapTail:'Load map-server last 20 lines', mapServerLiveLogs:'Map-server Live Logs', liveLogsWaiting:'Waiting for map-server output...', configParameters:'Configuration Parameters', dbHostLabel:'DB Host', dbPortLabel:'DB Port', loginPortLabel:'Login-server Port', charPortLabel:'Char-server Port', mapPortLabel:'Map-server Port', webServerPortLabel:'Web-server Port', dbUserLabel:'DB User', dbPasswordLabel:'DB Password', dbNameLabel:'DB Name', logsDbNameLabel:'Logs DB Name', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Status Refresh (sec)', offlineAlertLabel:'Offline Alert Check (sec)', usageRefreshLabel:'Usage Graph Refresh (sec)', saveConfiguration:'I-save ang Konpigurasyon', appHostLabel:'App Host IP', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'database password', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Character name, Char ID or Account ID', characterSearchLabel:'Character Search', characterSearchPlaceholder:'Type part of character name', searchResultsLabel:'Search Results', accountIdForUnbanLabel:'Account ID (for unban)', accountIdAutoFilledPlaceholder:'Auto-filled from selected character', decisionLabel:'Decision', decisionMute:'Mute', decisionUnmute:'Unmute', decisionBan:'Ban', decisionUnflag:'Unflag', decisionKick:'Kick', decisionJail:'Jail', decisionUnjail:'Unjail', decisionUnbanByAccount:'Unban (by Account ID)', muteDurationLabel:'Mute Duration (minutes)', banDurationLabel:'Ban Duration (days)', reasonModeLabel:'Reason Mode', reasonModeLogOnly:'Log only', reasonModeNotify:'Log + dispbottom to player', reasonLabel:'Reason', submitAction:'Submit Action', logsSourceLabel:'Source', logsSourceActions:'Platform Punishments', userSearchLabel:'User Search', userSearchPlaceholder:'Nickname, Char ID or Account ID', characterLabel:'Character', sessionLabel:'Session', itemLogs:'Item Logs', discordWebhookUrl:'Discord Webhook URL', telegramWebhookUrl:'Telegram Bot Webhook URL', notifyFlaggedEvents:'Notify flagged character events', notifyAppProxyOffline:'Notify App/Proxy crashes/offline', notifyPunishments:'Notify character punishments', saveWebhooks:'I-save ang Webhooks', rolePermissions:'Mga Pahintulot ng Role', userRoleAssignment:'Takda ng Role ng User', permission:'Permission', communityManager:'Community Manager', gameMaster:'Game Master', administrator:'Administrator', role:'Role', active:'Active', action:'Action', saveRolePermissions:'I-save ang Mga Pahintulot ng Role', changeEmail:'Palitan ang Email', currentEmail:'Current Email', newEmail:'New Email', confirmNewEmail:'Confirm New Email', updateEmail:'Update Email', changePassword:'Palitan ang Password', currentPassword:'Current Password', newPassword:'New Password', confirmNewPassword:'Confirm New Password', updatePassword:'Update Password', createNewAccount:'Gumawa ng Bagong Account', passwordLabel:'Password', createAccount:'Gumawa ng Account', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Last IP', colEmail:'Email', colBirthday:'Birthday', colSameUserPct:'% Same User', colOnline:'Online', colItem:'Item', colQty:'Qty', colRefine:'Refine', colCards:'Cards', colBonuses:'Bonuses', colTime:'Time', colType:'Type', colAmount:'Amount', colMap:'Map', databaseLabel:'Database:', schedulerLabel:'Scheduler:', overloadRiskLabel:'Panganib ng Overload:', dbLatencyLabel:'DB Latency:', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Proxy Monitoring', addProxy:'Add Proxy', proxyName:'Proxy Name', proxyCountry:'Country', proxyFlag:'Flag Emoji', proxyHost:'Host', proxyPort:'Port', removeProxy:'Remove', proxyLatency:'Latency', footerTitle:'Mga Resource', footerReadme:'Buksan ang README ng panel', footerBullet1:'Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.', footerBullet2:'Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.', footerBullet3:'Webhook notifications support offline monitoring and punishment auditing with structured payloads.'},
+  it: {appTitle:'Pannello di Controllo Aggregatore', playerControl:'Controllo Giocatori', ipCheck:'Controllo IP', logsHistory:'Storico Log', healthCheck:'Panoramica App', configAI:'Configurazione', webhooks:'Webhook', account:'Account', manageRoles:'Gestisci Ruoli', accountSecurity:'Sicurezza Account', toggleTheme:'Alterna Chiaro/Scuro', logout:'Disconnetti', language:'Lingua', runIpCheck:'Esegui Controllo IP', addTarget:'Aggiungi Target', checkStatus:'Status', healthCheckTitle:'App Overview', refreshStatus:'Aggiorna Stato', refreshLogs:'Aggiorna Log', startEmulator:'Avvia Emulatore', stopEmulator:'Ferma Emulatore', scrollTop:'Torna su', noChecks:'No checks executed yet.', systemsChecked:'Systems checked successfully.', error:'Error', configSaved:'Configuration saved successfully.', configUnsaved:'Configuration not saved in this session.', webhooksSaved:'Webhook settings saved.', noWebhookChanges:'No changes yet.', userItems:'User Items', ipNoCheck:'No check yet.', logsNoData:'No logs loaded.', statusNoCheck:'No status check yet.', noActionSent:'No action sent yet.', noCharacterSelected:'No character selected.', securitySettingsUnchanged:'Security settings unchanged.', rolesNotLoaded:'Role manager not loaded yet.', search:'Cerca', loadItems:'Carica Oggetti', viewMore:'Vedi altro', loadMapTail:'Load map-server last 20 lines', mapServerLiveLogs:'Map-server Live Logs', liveLogsWaiting:'Waiting for map-server output...', configParameters:'Configuration Parameters', dbHostLabel:'DB Host', dbPortLabel:'DB Port', loginPortLabel:'Login-server Port', charPortLabel:'Char-server Port', mapPortLabel:'Map-server Port', webServerPortLabel:'Web-server Port', dbUserLabel:'DB User', dbPasswordLabel:'DB Password', dbNameLabel:'DB Name', logsDbNameLabel:'Logs DB Name', housekeepingLabel:'Housekeeping Job (min)', statusRefreshLabel:'Status Refresh (sec)', offlineAlertLabel:'Offline Alert Check (sec)', usageRefreshLabel:'Usage Graph Refresh (sec)', saveConfiguration:'Salva Configurazione', appHostLabel:'App Host IP', appHostPlaceholder:'127.0.0.1', dbHostPlaceholder:'127.0.0.1', dbPortPlaceholder:'3306', dbUserPlaceholder:'rathena', dbPasswordPlaceholder:'database password', dbNamePlaceholder:'ragnarok', logsDbNamePlaceholder:'log', ipCheckSearch:'Character name, Char ID or Account ID', characterSearchLabel:'Character Search', characterSearchPlaceholder:'Type part of character name', searchResultsLabel:'Search Results', accountIdForUnbanLabel:'Account ID (for unban)', accountIdAutoFilledPlaceholder:'Auto-filled from selected character', decisionLabel:'Decision', decisionMute:'Mute', decisionUnmute:'Unmute', decisionBan:'Ban', decisionUnflag:'Unflag', decisionKick:'Kick', decisionJail:'Jail', decisionUnjail:'Unjail', decisionUnbanByAccount:'Unban (by Account ID)', muteDurationLabel:'Mute Duration (minutes)', banDurationLabel:'Ban Duration (days)', reasonModeLabel:'Reason Mode', reasonModeLogOnly:'Log only', reasonModeNotify:'Log + dispbottom to player', reasonLabel:'Reason', submitAction:'Submit Action', logsSourceLabel:'Source', logsSourceActions:'Platform Punishments', userSearchLabel:'User Search', userSearchPlaceholder:'Nickname, Char ID or Account ID', characterLabel:'Character', sessionLabel:'Session', itemLogs:'Item Logs', discordWebhookUrl:'Discord Webhook URL', telegramWebhookUrl:'Telegram Bot Webhook URL', notifyFlaggedEvents:'Notify flagged character events', notifyAppProxyOffline:'Notify App/Proxy crashes/offline', notifyPunishments:'Notify character punishments', saveWebhooks:'Salva Webhook', rolePermissions:'Permessi Ruoli', userRoleAssignment:'Assegnazione Ruolo Utente', permission:'Permission', communityManager:'Community Manager', gameMaster:'Game Master', administrator:'Administrator', role:'Role', active:'Active', action:'Action', saveRolePermissions:'Salva Permessi Ruoli', changeEmail:'Cambia Email', currentEmail:'Current Email', newEmail:'New Email', confirmNewEmail:'Confirm New Email', updateEmail:'Update Email', changePassword:'Cambia Password', currentPassword:'Current Password', newPassword:'New Password', confirmNewPassword:'Confirm New Password', updatePassword:'Update Password', createNewAccount:'Crea Nuovo Account', passwordLabel:'Password', createAccount:'Crea Account', colChar:'Char', colCharId:'Char ID', colAccountId:'Account ID', colLastIp:'Last IP', colEmail:'Email', colBirthday:'Birthday', colSameUserPct:'% Same User', colOnline:'Online', colItem:'Item', colQty:'Qty', colRefine:'Refine', colCards:'Cards', colBonuses:'Bonuses', colTime:'Time', colType:'Type', colAmount:'Amount', colMap:'Map', databaseLabel:'Database:', schedulerLabel:'Scheduler:', overloadRiskLabel:'Rischio Sovraccarico:', dbLatencyLabel:'Latenza DB:', sysUsageDefault:'CPU: - | RAM: -', proxyMonitoringTitle:'Proxy Monitoring', addProxy:'Add Proxy', proxyName:'Proxy Name', proxyCountry:'Country', proxyFlag:'Flag Emoji', proxyHost:'Host', proxyPort:'Port', removeProxy:'Remove', proxyLatency:'Latency', footerTitle:'Risorse', footerReadme:'Apri README del pannello', footerBullet1:'Configure database credentials and emulator ports in Configuration before using IP, item, and logs tools.', footerBullet2:'Use App Overview to monitor service health, CPU/RAM, and real-time map-server logs.', footerBullet3:'Webhook notifications support offline monitoring and punishment auditing with structured payloads.'}
+};
+const BASE_MENU_I18N_KEYS = ['menuOperations','menuModeration','menuMonitoring','menuConfiguration','menuSecurity','automationCenter'];
+Object.keys(I18N).forEach((lang)=>{
+  if(!I18N[lang]) I18N[lang] = {};
+  BASE_MENU_I18N_KEYS.forEach((k)=>{ if(!(k in I18N[lang])) I18N[lang][k] = I18N.en[k] || k; });
+});
+function t(key){ const table = I18N[LANG] || I18N.en; return table[key] || (I18N.en[key] || key); }
+function applyI18n(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    const text = t(k);
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = text;
+    else if (el.childNodes.length) el.childNodes[0].textContent = text;
+    else el.textContent = text;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.title = t('appTitle');
+  $('langSelect').value = LANG;
+  renderProxies();
+  applyAutomationI18n();
+  renderSubMenu();
+}
+
+
+const AUTO_I18N = {
+  en: {
+    autoTitle:'Automation Center (Watch Cases)',
+    howTo:'Create a watch case and the scheduler checks it automatically using Frequency (sec). Run executes an immediate check now. Events opens detected-change and error history. Enabled means this case is included in automatic scheduler checks.',
+    searchTitle:'1) Target Search',searchType:'Search Type',query:'Query',results:'Results',caseSetup:'2) Case Setup',
+    type:'Type',label:'Label',frequency:'Frequency (sec)',charId:'Char ID',accountId:'Account ID',itemId:'Item ID (nameid)',severity:'Severity',
+    enabled:'Enabled (included in automatic scheduler checks)',notifyDiscord:'Notify Discord on change',notifyTelegram:'Notify Telegram on change',
+    autoRelated:'Auto-create related watch cases',monitorAny:'Monitor any meaningful change',monitorItem:'Monitor item movement (picklog 1h)',itemThreshold:'Item movement threshold (1h)',
+    monitorFailed:'Monitor failed logins (1h)',failedThreshold:'Failed login threshold (1h)',monitorZeny:'Monitor zeny increase',zenyThreshold:'Zeny increase threshold',
+    maxRelated:'Max related chars (when type=account)',autoHelp:'If auto-create is enabled: character -> account watch may be auto-created; account -> top related character watches can be auto-created.',
+    notes:'Notes',createCase:'Create Watch Case',refreshCases:'Refresh Cases',feedbackEmpty:'No watch cases loaded.',findById:'Find case by ID',eventsTitle:'Case Events',
+    searchPlaceholder:'char name / charid / accountid / item id or name',labelPlaceholder:'e.g. suspect char / high-value item',filterPlaceholder:'e.g. 14',
+    run:'Run',events:'Events',txt:'TXT',details:'Details',delete:'Delete',close:'Close',preview:'Preview',
+    runTitle:'Run immediate check now',eventsTitleBtn:'Open watch event history',txtTitle:'Preview TXT export in modal',detailsTitle:'Show case details',deleteTitle:'Delete case and events',
+    loadedCases:'Loaded {n} watch case(s).',searchReturned:'Search returned {n} target(s).',createdCase:'Watch case #{id} created.{related}',
+    relatedFmt:' Related: {ids}',manualDone:'Manual run done. Changed: {changed}',confirmDelete:'Delete watch case #{id} and all its events?',
+    deletedOk:'Watch case #{id} deleted.',enabledYes:'yes',enabledNo:'no',none:'none',
+    dLabel:'Label',dTarget:'Target',dCreatedBy:'Created by',dCreatedAt:'Created at',dFrequency:'Frequency',dChecks:'Checks done',dEvents:'Events',dErrors:'Errors',dLastCheck:'Last check',dLastNotify:'Last notify',dRules:'Automation rules',dAnyChange:'Any change',dItemMovement:'Item movement',dFailedLogins:'Failed logins',dZenyIncrease:'Zeny increase',dThreshold:'threshold',dLatestEvent:'Latest event',dNotes:'Notes',
+  },
+  'pt-BR': {}, es:{}, fr:{}, de:{}, tl:{}, it:{}
+};
+['pt-BR','es','fr','de','tl','it'].forEach(k=>AUTO_I18N[k]={...AUTO_I18N.en});
+function at(key, vars={}){ const table=AUTO_I18N[LANG]||AUTO_I18N.en; let txt=table[key]||AUTO_I18N.en[key]||key; Object.entries(vars).forEach(([k,v])=>{txt=txt.replaceAll(`{${k}}`, String(v));}); return txt; }
+function setLabelPrefix(id, text){
+  const el = $(id);
+  if(!el) return;
+  for (const n of [...el.childNodes]) {
+    if (n.nodeType === Node.TEXT_NODE) { el.removeChild(n); }
+  }
+  const toggle = el.querySelector('input[type="checkbox"], input[type="radio"]');
+  if (toggle) {
+    if (toggle.nextSibling && toggle.nextSibling.nodeType === Node.TEXT_NODE) {
+      toggle.nextSibling.textContent = ` ${text}`;
+    } else {
+      toggle.insertAdjacentText('afterend', ` ${text}`);
+    }
+    return;
+  }
+  el.insertBefore(document.createTextNode(`${text} `), el.firstChild);
+}
+function applyAutomationI18n(){
+  const map={
+    autoTitle:'autoTitle',watchHowTo:'howTo',autoSearchTitle:'searchTitle',autoCaseSetupTitle:'caseSetup',watchAutoHelp:'autoHelp',
+    createWatchCaseBtn:'createCase',refreshWatchCasesBtn:'refreshCases',watchCaseEventsTitle:'eventsTitle',
+    watchModalCloseBtn:'close'
+  };
+  Object.entries(map).forEach(([id,key])=>{ const el=$(id); if(el){ el.textContent=at(key); }});
+  [
+    ['watchSearchTypeLabel','searchType'],['watchQueryLabel','query'],['watchSearchResultsLabel','results'],['watchTypeLabel','type'],['watchLabelLabel','label'],
+    ['watchFreqLabel','frequency'],['watchCharIdLabel','charId'],['watchAccountIdLabel','accountId'],['watchNameidLabel','itemId'],['watchSeverityLabel','severity'],
+    ['watchEnabledLabel','enabled'],['watchNotifyDiscordLabel','notifyDiscord'],['watchNotifyTelegramLabel','notifyTelegram'],['watchAutoRelatedLabel','autoRelated'],
+    ['watchMonitorAnyChangeLabel','monitorAny'],['watchMonitorItemMovementLabel','monitorItem'],['watchItemMovementThresholdLabel','itemThreshold'],
+    ['watchMonitorFailedLoginsLabel','monitorFailed'],['watchFailedLoginsThresholdLabel','failedThreshold'],['watchMonitorZenyIncreaseLabel','monitorZeny'],
+    ['watchZenyIncreaseThresholdLabel','zenyThreshold'],['watchMaxRelatedLabel','maxRelated'],['watchNotesLabel','notes'],['watchCaseFilterLabel','findById']
+  ].forEach(([id,key])=>setLabelPrefix(id, at(key)));
+  if($('watch_search_q')) $('watch_search_q').placeholder = at('searchPlaceholder');
+  if($('watch_label')) $('watch_label').placeholder = at('labelPlaceholder');
+  if($('watch_case_filter')) $('watch_case_filter').placeholder = at('filterPlaceholder');
+}
+$('langSelect').addEventListener('change', ()=>{ LANG = $('langSelect').value; localStorage.setItem('tc_lang', LANG); applyI18n(); });
+
+const MAIN_MENU = {
+  operations: ['health', 'readme'],
+  moderation: ['player-control', 'ip-check', 'user-items'],
+  monitoring: ['automation', 'logs'],
+  configuration: ['config', 'webhooks'],
+  security: ['account', 'manage-roles'],
+};
+const TAB_I18N_KEY = {
+  health: 'healthCheck',
+  readme: 'footerReadme',
+  'player-control': 'playerControl',
+  'ip-check': 'ipCheck',
+  'user-items': 'userItems',
+  automation: 'automationCenter',
+  logs: 'logsHistory',
+  config: 'configAI',
+  webhooks: 'webhooks',
+  account: 'account',
+  'manage-roles': 'manageRoles',
+};
+let ACTIVE_MAIN = 'operations';
+let ACTIVE_TAB = 'health';
+
+function tabAllowed(tab){
+  if (tab === 'automation') return !!(CURRENT_USER && CURRENT_USER.permissions && CURRENT_USER.permissions.view_watch);
+  if (tab === 'manage-roles') return !!(CURRENT_USER && CURRENT_USER.role === 'administrator');
+  return true;
+}
+
+function visibleTabsForMain(main){
+  return (MAIN_MENU[main] || []).filter(tabAllowed);
+}
+
+function selectTab(tab){
+  ACTIVE_TAB = tab;
+  document.querySelectorAll('section[id^="tab-"]').forEach(sec=>sec.classList.add('hidden'));
+  const sec = $(`tab-${tab}`);
+  if (sec) sec.classList.remove('hidden');
+  document.querySelectorAll('.subtab').forEach(b=>b.classList.toggle('active', b.dataset.tab === tab));
+}
+
+async function selectMain(main, preferredTab=''){
+  ACTIVE_MAIN = main;
+  document.querySelectorAll('.menu button[data-main]').forEach(b=>b.classList.toggle('active', b.dataset.main === main));
+  renderSubMenu();
+  const tabs = visibleTabsForMain(main);
+  if (!tabs.length) return;
+  const nextTab = (preferredTab && tabs.includes(preferredTab)) ? preferredTab : (tabs.includes(ACTIVE_TAB) ? ACTIVE_TAB : tabs[0]);
+  if (nextTab === 'readme') {
+    selectTab('readme');
+    try {
+      const r=await apiGet('/api/panel-readme');
+      $('readmeContent').textContent=r.content||'';
+    } catch(e){ $('readmeContent').textContent = String(e); }
+  } else {
+    selectTab(nextTab);
+  }
+}
+
+function renderSubMenu(){
+  const host = $('subMenu');
+  if(!host) return;
+  const tabs = visibleTabsForMain(ACTIVE_MAIN);
+  host.innerHTML='';
+  tabs.forEach(tab=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='subtab';
+    b.dataset.tab=tab;
+    b.textContent = t(TAB_I18N_KEY[tab] || tab);
+    b.onclick=()=>selectMain(ACTIVE_MAIN, tab);
+    host.appendChild(b);
+  });
+  document.querySelectorAll('.subtab').forEach(b=>b.classList.toggle('active', b.dataset.tab === ACTIVE_TAB));
+}
+
+document.querySelectorAll('.menu button[data-main]').forEach(btn => {
+  btn.addEventListener('click', ()=>{ selectMain(btn.dataset.main || 'operations'); });
+});
+
+$('themeBtn').onclick = () => document.body.classList.toggle('light');
+$('logoutBtn').onclick = () => { localStorage.removeItem('tc_token'); TOKEN=''; $('appWrap').classList.add('hidden'); $('loginWrap').classList.remove('hidden'); };
+
+$('decision').addEventListener('change', ()=> {
+  const d = $('decision').value;
+  $('muteWrap').classList.toggle('hidden', d !== 'mute');
+  $('banWrap').classList.toggle('hidden', d !== 'ban');
+});
+
+$('loginBtn').onclick = async () => {
+  try {
+    const res = await fetch('/api/auth/login', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({email:$('login_email').value, password:$('login_password').value})});
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Login failed');
+    TOKEN = data.token;
+    localStorage.setItem('tc_token', TOKEN);
+    $('loginWrap').classList.add('hidden');
+    $('appWrap').classList.remove('hidden');
+    initApp();
+  } catch (e) { setFeedback('loginFeedback', `Login failed: ${e.message}`); }
+};
+
+async function apiGet(path){
+  const res = await fetch(path, {headers: authHeaders()});
+  if (res.status === 401) throw new Error('Unauthorized');
+  return res.json();
+}
+
+async function apiPost(path, payload){
+  const res = await fetch(path, {method:'POST', headers:{'content-type':'application/json', ...authHeaders()}, body:JSON.stringify(payload)});
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Request failed');
+  return data;
+}
+
+async function loadConfig() {
+  const cfg = await apiGet('/api/config');
+  $('app_host').value = cfg.app_host || '127.0.0.1'; $('db_host').value = cfg.db.host; $('db_port').value = cfg.db.port; $('login_server_port').value = cfg.login_server_port || 6900; $('char_server_port').value = cfg.char_server_port || 6121; $('map_server_port').value = cfg.map_server_port || 5121; $('db_user').value = cfg.db.user; $('db_password').value = cfg.db.password; $('db_name').value = cfg.db.database; $('db_logs_name').value = cfg.db.logs_database || 'log';
+  $('hk_sched').value = cfg.schedule_housekeeping_minutes; $('status_refresh_sec').value = cfg.status_refresh_seconds || 300; $('offline_notify_sec').value = cfg.offline_notify_seconds || 300; $('usage_refresh_sec').value = cfg.usage_refresh_seconds || 5;
+  $('wh_discord').value = cfg.webhooks?.discord_url || '';
+  $('wh_telegram').value = cfg.webhooks?.telegram_url || '';
+  $('wh_flagged').checked = !!cfg.webhooks?.notify_flagged_chars;
+  $('wh_mapdown').checked = !!cfg.webhooks?.notify_infra_down;
+  $('wh_punishments').checked = !!cfg.webhooks?.notify_character_punishments;
+  $('web_server_port').value = cfg.web_server_port || 8888;
+  PROXIES = cfg.proxies || [];
+  renderProxies();
+}
+
+async function searchChars() {
+  const q = $('char_search').value.trim();
+  if (!q) { $('char_pick').innerHTML = ''; return; }
+  const res = await apiGet(`/api/chars/search?q=${encodeURIComponent(q)}&limit=5`);
+  $('char_pick').innerHTML = ''; (res.items || []).forEach(it => { const o=document.createElement('option'); o.value=it.char_id; o.dataset.accountId = it.account_id ?? 0; o.textContent=`${it.name} (char:${it.char_id} / acc:${it.account_id ?? 0})`; $('char_pick').appendChild(o); });
+  if ($('char_pick').options.length > 0) { $('account_id').value = $('char_pick').options[0].dataset.accountId || ''; }
+}
+
+function paintOnOff(el, on) { el.className = `chip ${on ? 'on' : 'off'}`; el.textContent = on ? 'ON' : 'OFF'; }
+
+async function refreshStatus() {
+  const s = await apiGet('/api/status');
+  paintOnOff($('dbChip'), !!s.db_ok); paintOnOff($('schedChip'), !!s.scheduler_running);
+  $('overRisk').textContent = `${s.overload_percent ?? 0}%`; $('latency').textContent = s.db_latency_ms ?? '-';
+  const grid = $('portsGrid'); grid.innerHTML='';
+  Object.entries(s.ports || {}).forEach(([k,v])=>{ if(String(k).startsWith('proxy:')) return; const d=document.createElement('div'); d.className='stat'; d.innerHTML=`${k}: <span class="chip ${v?'on':'off'}">${v?'ONLINE':'OFFLINE'}</span>`; grid.appendChild(d); }); const appHost = document.createElement('div'); appHost.className='stat'; appHost.innerHTML=`🖥️ ${s.app_host||'-'} <span class="chip on">APP HOST</span>`; grid.appendChild(appHost); const dbHost=document.createElement('div'); dbHost.className='stat'; dbHost.innerHTML=`🗄️ ${s.db_host||'-'} <span class="chip on">DB HOST</span>`; grid.appendChild(dbHost); (s.proxies||[]).forEach(px=>{const d=document.createElement('div');d.className='stat';d.innerHTML=`${px.country_emoji||'🌐'} ${px.country_name||'Proxy'} (${px.host}:${px.port}) <span class="chip ${px.online?'on':'off'}">${px.online?'ONLINE':'OFFLINE'}</span><div style="margin-top:6px;color:var(--muted);font-size:.82rem;">${t('proxyLatency')}: ${px.latency_ms ?? '-'} ms</div>`;grid.appendChild(d);});
+  setFeedback('healthError', s.error ? `${t('error')}: ${s.error}` : t('systemsChecked'));
+}
+
+$('saveCfg').onclick = async () => {
+  const payload = {
+    db: {host:$('db_host').value, port:Number($('db_port').value), user:$('db_user').value, password:$('db_password').value, database:$('db_name').value, logs_database:$('db_logs_name').value || 'log'},
+    ai: {lookback_hours:48, bucket_minutes:60, min_observations:12, telemetry_retention_days:30, market_retention_days:30, chat_retention_days:14},
+    webhooks: {discord_url:$('wh_discord').value, telegram_url:$('wh_telegram').value, notify_flagged_chars:$('wh_flagged').checked, notify_infra_down:$('wh_mapdown').checked, notify_market_risk:false, notify_character_punishments:$('wh_punishments').checked},
+    schedule_market_minutes:60, schedule_housekeeping_minutes:Number($('hk_sched').value || 360), schedule_telemetry_minutes:30, status_refresh_seconds:Number($('status_refresh_sec').value || 300), offline_notify_seconds:Number($('offline_notify_sec').value || 300), usage_refresh_seconds:Number($('usage_refresh_sec').value || 5),
+    login_server_port:Number($('login_server_port').value || 6900), char_server_port:Number($('char_server_port').value || 6121), map_server_port:Number($('map_server_port').value || 5121), web_server_port:Number($('web_server_port').value || 8888), app_host:$('app_host').value || '127.0.0.1', proxies: collectProxiesFromForm()
+  };
+  await fetch('/api/config', {method:'PUT', headers:{'content-type':'application/json', ...authHeaders()}, body:JSON.stringify(payload)});
+  setFeedback('cfgFeedback', t('configSaved'));
+  PROXIES = payload.proxies || [];
+  renderProxies();
+  await refreshStatus();
+};
+
+$('saveHooks').onclick = async () => { await $('saveCfg').onclick(); setFeedback('whFeedback', t('webhooksSaved')); };
+
+$('runIpCheck').onclick = async () => {
+  const q = $('ip_query').value.trim();
+  if (!q) return;
+  const res = await apiPost('/api/ip-check', {query:q});
+  $('ipBody').innerHTML='';
+  (res.items || []).forEach(it => {
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${it.name||''}</td><td>${it.char_id||''}</td><td>${it.account_id||''}</td><td>${it.last_ip||''}</td><td>${it.email||''}</td><td>${it.birthdate||''}</td><td>${it.same_user_percent||0}%</td>`;
+    $('ipBody').appendChild(tr);
+  });
+  setFeedback('ipFeedback', res.warning || `Found ${(res.items||[]).length} associated character(s).`);
+};
+
+function secondsText(v){
+  const n = Number(v||0);
+  if (n <= 0) return 'none';
+  const d = Math.floor(n/86400), h = Math.floor((n%86400)/3600), m = Math.floor((n%3600)/60);
+  return `${d}d ${h}h ${m}m`;
+}
+
+async function refreshLogs(reset=true){
+  const source = $('logsSource').value;
+  const lim = 10;
+  const q = $('logsSearch').value.trim();
+  if (reset) {
+    LOGS_OFFSET = 0;
+    $('logsBody').innerHTML='';
+    $('logsHead').innerHTML='';
+  }
+
+  if (source === 'actions') {
+    const res = await apiGet(`/api/actions/history?decision=&limit=${encodeURIComponent(lim)}&offset=${encodeURIComponent(LOGS_OFFSET)}`);
+    const cols = ['created_at','char_name','char_id','account_id','decision','status','remaining','reason'];
+    if (reset) $('logsHead').innerHTML = cols.map(c=>`<th>${c}</th>`).join('');
+    (res.items || []).forEach(it => {
+      const status = it.status_label || (it.active ? 'Active' : 'Inactive');
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${it.created_at||''}</td><td>${it.char_name||''}</td><td>${it.char_id||''}</td><td>${it.account_id||''}</td><td>${it.decision||''}</td><td>${status}</td><td>${secondsText(it.remaining_seconds)}</td><td>${it.reason||''}</td>`;
+      $('logsBody').appendChild(tr);
+    });
+    const got = (res.items||[]).length;
+    LOGS_OFFSET += got;
+    const moreStyle = got < lim ? 'none' : 'inline-block';
+  $('logsMoreBtn').style.display = moreStyle;
+  $('logsMoreBtnBottom').style.display = moreStyle;
+    setFeedback('logsFeedback', res.warning || `Loaded ${LOGS_OFFSET} platform log row(s).`);
+    return;
+  }
+
+  const res = await apiGet(`/api/logs/search?table=${encodeURIComponent(source)}&q=${encodeURIComponent(q)}&limit=${encodeURIComponent(lim)}&offset=${encodeURIComponent(LOGS_OFFSET)}`);
+  const cols = res.columns || [];
+  if (reset) $('logsHead').innerHTML = cols.map(c=>`<th>${c}</th>`).join('');
+  (res.items || []).forEach(it => {
+    const tr=document.createElement('tr');
+    tr.innerHTML = cols.map(c=>`<td>${it[c] ?? ''}</td>`).join('');
+    $('logsBody').appendChild(tr);
+  });
+  const got = (res.items||[]).length;
+  LOGS_OFFSET += got;
+  const moreStyle = got < lim ? 'none' : 'inline-block';
+  $('logsMoreBtn').style.display = moreStyle;
+  $('logsMoreBtnBottom').style.display = moreStyle;
+  setFeedback('logsFeedback', res.warning || `Loaded ${LOGS_OFFSET} row(s) from ${source}.`);
+}
+
+function renderTargets(){
+  $('targetsBody').innerHTML='';
+  TARGETS.forEach((t,idx)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.name || ''}</td><td>${t.char_id}</td><td>${t.account_id || 0}</td><td>${t.online===null?'?':(t.online?'ONLINE':'OFFLINE')}</td><td><button data-remove-target='${idx}'>Remove</button></td>`;
+    $('targetsBody').appendChild(tr);
+  });
+  document.querySelectorAll('[data-remove-target]').forEach(btn=>btn.onclick=()=>{TARGETS.splice(Number(btn.dataset.removeTarget),1); renderTargets();});
+}
+
+$('addTarget').onclick = async () => {
+  const selected = $('char_pick').selectedOptions[0];
+  if (!selected) return;
+  const charId = Number(selected.value || 0);
+  const accountId = Number(selected.dataset.accountId || 0);
+  const name = String(selected.textContent || '').split(' (')[0];
+  if (TARGETS.some(t=>t.char_id===charId)) return;
+  TARGETS.push({char_id:charId, account_id:accountId, name, online:null});
+  renderTargets();
+};
+
+$('checkStatus').onclick = async () => {
+  if (!TARGETS.length){ setFeedback('statusFeedback','No targets selected.'); return; }
+  for (const t of TARGETS){
+    const st = await apiGet(`/api/chars/status?char_id=${encodeURIComponent(t.char_id)}`);
+    t.online = !!st.online;
+  }
+  renderTargets();
+  const on = TARGETS.filter(t=>t.online).length;
+  setFeedback('statusFeedback', `${on}/${TARGETS.length} target(s) online.`);
+};
+
+$('sendDecision').onclick = async () => {
+  const d = $('decision').value;
+  const duration = d === 'mute' ? Number($('mute_minutes').value || 0) : (d === 'ban' ? Number($('ban_days').value || 0) : 0);
+  const selected = $('char_pick').selectedOptions[0];
+  const accountId = Number($('account_id').value || (selected ? selected.dataset.accountId : 0) || 0);
+
+  let results = [];
+  if (TARGETS.length > 0 && d !== 'unban') {
+    const payload = {targets: TARGETS.map(t => ({
+      char_id: t.char_id,
+      account_id: t.account_id || accountId,
+      decision: d,
+      reason: $('reason').value,
+      reason_mode: $('reason_mode').value,
+      duration_value: duration
+    }))};
+    const out = await apiPost('/api/decision/bulk', payload);
+    results = out.results || [];
+    const okCount = results.filter(r=>r.ok).length;
+    setFeedback('actionFeedback', `Bulk action complete: ${okCount}/${results.length} succeeded.`);
+  } else {
+    const res = await apiPost('/api/decision', {
+      char_id:Number($('char_pick').value || 0),
+      account_id: accountId,
+      decision:d,
+      reason:$('reason').value,
+      reason_mode:$('reason_mode').value,
+      duration_value:duration
+    });
+    setFeedback('actionFeedback', res.message || 'Action submitted.');
+  }
+
+  $('char_search').value = '';
+  $('char_pick').innerHTML = '';
+  $('account_id').value = '';
+  $('decision').value = 'mute';
+  $('reason_mode').value = 'log';
+  $('reason').value = '';
+  $('mute_minutes').value = 10;
+  $('ban_days').value = 1;
+};
+
+$('changeEmailBtn').onclick = async () => {
+  try {
+    await apiPost('/api/auth/change-email', {current_email:$('cur_email').value, new_email:$('new_email').value, confirm_email:$('confirm_email').value});
+    setFeedback('acctFeedback', 'Email updated successfully.');
+  } catch(e) { setFeedback('acctFeedback', e.message); }
+};
+
+$('changePassBtn').onclick = async () => {
+  try {
+    await apiPost('/api/auth/change-password', {current_password:$('cur_pass').value, new_password:$('new_pass').value, confirm_password:$('confirm_pass').value});
+    setFeedback('acctFeedback', 'Password updated successfully.');
+  } catch(e) { setFeedback('acctFeedback', e.message); }
+};
+
+
+$('toggleEmailChangeBtn').onclick = ()=> $('emailChangeWrap').classList.toggle('hidden');
+$('togglePassChangeBtn').onclick = ()=> $('passChangeWrap').classList.toggle('hidden');
+$('createUserBtn').onclick = async () => {
+  try {
+    await apiPost('/api/auth/create-user', {
+      email: $('new_user_email').value,
+      password: $('new_user_password').value,
+      role: $('new_user_role').value,
+    });
+    setFeedback('acctFeedback', 'Account created successfully.');
+    $('new_user_email').value='';
+    $('new_user_password').value='';
+    await loadRolesConfig();
+  } catch(e){ setFeedback('acctFeedback', e.message); }
+};
+
+$('emuRestart').onclick = async()=>{ const r=await fetch('/api/emulator/start',{method:'POST',headers:authHeaders()}); const j=await r.json(); setFeedback('healthError', j.ok ? 'Emulator start command sent.' : JSON.stringify(j)); };
+$('emuStop').onclick = async()=>{ if(!confirm('Confirm stop all emulator services?')) return; const r=await fetch('/api/emulator/stop?confirm=true',{method:'POST',headers:authHeaders()}); const j=await r.json(); setFeedback('healthError', j.ok ? 'Emulator stop command sent.' : JSON.stringify(j)); };
+$('refreshStatus').onclick = refreshStatus;
+$('refreshLogs').onclick = ()=>refreshLogs(true);
+bindLogsButtons();
+$('char_search').addEventListener('input', searchChars);
+$('char_pick').addEventListener('change', ()=> { const opt=$('char_pick').selectedOptions[0]; if (opt) $('account_id').value = opt.dataset.accountId || ''; });
+$('ui_search_btn').onclick = searchUserItems;
+$('ui_search').addEventListener('input', searchUserItems);
+$('ui_load').onclick = loadUserItems;
+$('uiLogMoreBtn').onclick = ()=>{ if(ITEM_LOG_CHAR_ID && ITEM_LOG_NAMEID) loadUserItemLogs(ITEM_LOG_CHAR_ID, ITEM_LOG_NAMEID, false); };
+$('addProxyBtn').onclick = ()=>{ PROXIES.push({name:'Proxy', country_name:'Unknown', country_emoji:'🌐', host:'127.0.0.1', port:0}); renderProxies(); };
+$('openReadme').onclick = async()=>{ await selectMain('operations', 'readme'); };
+$('refreshWatchCasesBtn').onclick = ()=>loadWatchCases();
+$('watch_type').onchange = ()=>{ $('watch_search_type').value = $('watch_type').value; };
+$('watch_search_type').onchange = ()=>{ $('watch_type').value = $('watch_search_type').value; };
+$('watchSearchBtn').onclick = ()=>loadWatchSearchResults();
+$('watch_search_q').addEventListener('keydown', (e)=>{ if(e.key==='Enter') loadWatchSearchResults(); });
+$('watch_case_filter').addEventListener('input', ()=>renderWatchCasesTable());
+$('watch_search_pick').onchange = ()=>{
+  const opt = $('watch_search_pick').selectedOptions[0];
+  if(!opt) return;
+  const wt = $('watch_search_type').value;
+  if(wt === 'character'){
+    $('watch_char_id').value = Number(opt.dataset.charId||0);
+    $('watch_account_id').value = Number(opt.dataset.accountId||0);
+    if(!$('watch_label').value) $('watch_label').value = `Character ${opt.dataset.name || opt.textContent}`;
+  } else if(wt === 'account'){
+    $('watch_account_id').value = Number(opt.dataset.accountId||0);
+    if(!$('watch_label').value) $('watch_label').value = `Account ${opt.dataset.userid || opt.textContent}`;
+  } else {
+    $('watch_nameid').value = Number(opt.dataset.nameid||0);
+    if(!$('watch_label').value) $('watch_label').value = `Item ${opt.dataset.itemName || opt.textContent}`;
+  }
+};
+
+function openWatchModal(title, html){
+  $('watchModalTitle').textContent = title;
+  $('watchModalBody').innerHTML = html;
+  $('watchOverlay').classList.remove('hidden');
+  $('watchModal').classList.remove('hidden');
+}
+function closeWatchModal(){
+  $('watchOverlay').classList.add('hidden');
+  $('watchModal').classList.add('hidden');
+}
+$('watchModalCloseBtn').onclick = closeWatchModal;
+$('watchOverlay').onclick = closeWatchModal;
+
+let WATCH_CASES_CACHE = [];
+let WATCH_SELECTED_CASE = 0;
+
+$('createWatchCaseBtn').onclick = async()=>{
+  try {
+    const payload = {
+      watch_type: $('watch_type').value,
+      char_id: Number($('watch_char_id').value || 0),
+      account_id: Number($('watch_account_id').value || 0),
+      nameid: Number($('watch_nameid').value || 0),
+      label: $('watch_label').value,
+      check_every_seconds: Number($('watch_freq').value || 300),
+      severity: $('watch_severity').value,
+      notify_discord: $('watch_notify_discord').checked,
+      notify_telegram: $('watch_notify_telegram').checked,
+      enabled: $('watch_enabled').checked,
+      auto_create_related: $('watch_auto_related').checked,
+      max_related_chars: Number($('watch_max_related').value || 3),
+      monitor_any_change: $('watch_monitor_any_change').checked,
+      monitor_item_movement: $('watch_monitor_item_movement').checked,
+      item_movement_threshold: Number($('watch_item_movement_threshold').value || 20),
+      monitor_failed_logins: $('watch_monitor_failed_logins').checked,
+      failed_login_threshold: Number($('watch_failed_logins_threshold').value || 5),
+      monitor_zeny_increase: $('watch_monitor_zeny_increase').checked,
+      zeny_increase_threshold: Number($('watch_zeny_increase_threshold').value || 1000000),
+      notes: $('watch_notes').value,
+    };
+    const res = await apiPost('/api/watch/cases', payload);
+    const related = (res.related_ids||[]).length ? at('relatedFmt', {ids: (res.related_ids||[]).join(', ')}) : '';
+    setFeedback('watchFeedback', at('createdCase', {id: res.id, related}));
+    await loadWatchCases();
+  } catch(e){ setFeedback('watchFeedback', e.message); }
+};
+
+async function loadWatchSearchResults(){
+  try {
+    const q = $('watch_search_q').value.trim();
+    if(!q){ $('watch_search_pick').innerHTML=''; return; }
+    const wt = $('watch_search_type').value;
+    const res = await apiGet(`/api/watch/search?watch_type=${encodeURIComponent(wt)}&q=${encodeURIComponent(q)}&limit=30`);
+    const pick = $('watch_search_pick');
+    pick.innerHTML='';
+    (res.items||[]).forEach(it=>{
+      const o=document.createElement('option');
+      o.textContent = it.display || JSON.stringify(it);
+      if(wt==='character'){
+        o.dataset.charId = it.char_id ?? 0;
+        o.dataset.accountId = it.account_id ?? 0;
+        o.dataset.name = it.name ?? '';
+      } else if(wt==='account'){
+        o.dataset.accountId = it.account_id ?? 0;
+        o.dataset.userid = it.userid ?? '';
+      } else {
+        o.dataset.nameid = it.nameid ?? 0;
+        o.dataset.itemName = it.name_english ?? it.aegis_name ?? '';
+      }
+      pick.appendChild(o);
+    });
+    if((res.items||[]).length){ pick.selectedIndex=0; pick.dispatchEvent(new Event('change')); }
+    setFeedback('watchFeedback', at('searchReturned', {n: (res.items||[]).length}));
+  } catch(e){ setFeedback('watchFeedback', e.message); }
+}
+
+function _watchTargetText(w){
+  if ((w.watch_type||'') === 'character') return `char:${w.char_id||0}`;
+  if ((w.watch_type||'') === 'account') return `acc:${w.account_id||0}`;
+  return `item:${w.nameid||0}`;
+}
+
+function renderWatchCasesTable(){
+  const body = $('watchCasesBody');
+  body.innerHTML='';
+  const filterId = Number($('watch_case_filter').value || 0);
+  const rows = WATCH_CASES_CACHE.filter(w => !filterId || Number(w.id) === filterId);
+  rows.forEach(w=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${w.id}</td><td>${w.watch_type}</td><td>${_watchTargetText(w)}</td><td>${w.check_every_seconds}</td><td>${w.severity||''}</td><td>${w.enabled ? at('enabledYes') : at('enabledNo')}</td><td>${w.checks_count||0}</td><td>${w.last_checked_at||''}</td><td>${w.last_notified_at||''}</td><td><button data-watchrun="${w.id}" title="${at('runTitle')}">${at('run')}</button> <button data-watchview="${w.id}" title="${at('eventsTitleBtn')}">${at('events')}</button> <button data-watchdetails="${w.id}" title="${at('detailsTitle')}">${at('details')}</button> <button data-watchtxt="${w.id}" title="${at('txtTitle')}">${at('txt')}</button> <button data-watchdelete="${w.id}" title="${at('deleteTitle')}">${at('delete')}</button></td>`;
+    body.appendChild(tr);
+  });
+
+  document.querySelectorAll('[data-watchrun]').forEach(btn=>btn.onclick=async()=>{
+    const id = Number(btn.dataset.watchrun||0);
+    const r = await apiPost(`/api/watch/cases/${id}/run`, {});
+    setFeedback('watchFeedback', at('manualDone', {changed: (r.changed_fields||[]).join(', ') || at('none')}));
+    await loadWatchCases();
+    if (WATCH_SELECTED_CASE === id) await loadWatchEvents(id);
+  });
+  document.querySelectorAll('[data-watchview]').forEach(btn=>btn.onclick=async()=>{
+    const id = Number(btn.dataset.watchview||0);
+    WATCH_SELECTED_CASE = id;
+    await loadWatchEvents(id);
+  });
+  document.querySelectorAll('[data-watchdelete]').forEach(btn=>btn.onclick=async()=>{
+    const id = Number(btn.dataset.watchdelete||0);
+    if(!confirm(at('confirmDelete', {id}))) return;
+    await fetch(`/api/watch/cases/${id}`, {method:'DELETE', headers:authHeaders()}).then(async(r)=>{ if(!r.ok) throw new Error((await r.json()).detail || r.statusText); return r.json(); });
+    setFeedback('watchFeedback', at('deletedOk', {id}));
+    await loadWatchCases();
+    if (WATCH_SELECTED_CASE === id) $('watchEventsBody').innerHTML='';
+  });
+  document.querySelectorAll('[data-watchdetails]').forEach(btn=>btn.onclick=async()=>{
+    const id = Number(btn.dataset.watchdetails||0);
+    const res = await apiGet(`/api/watch/cases/${id}`);
+    const c = res.case || {};
+    const o = res.overview || {};
+    const rules = o.automation_rules || {};
+    const html = `
+      <div><strong>Case #${c.id}</strong> (${c.watch_type})</div>
+      <hr style="border-color:var(--line)">
+      <div><strong>${at('dLabel')}:</strong> ${c.label||'-'}</div>
+      <div><strong>${at('dTarget')}:</strong> ${_watchTargetText(c)}</div>
+      <div><strong>${at('dCreatedBy')}:</strong> ${c.created_by||'-'} | <strong>${at('dCreatedAt')}:</strong> ${c.created_at||'-'}</div>
+      <div><strong>${at('dFrequency')}:</strong> ${c.check_every_seconds}s | <strong>Severity:</strong> ${c.severity||'-'} | <strong>Enabled:</strong> ${c.enabled?at('enabledYes'):at('enabledNo')}</div>
+      <div><strong>${at('dChecks')}:</strong> ${o.checks_count||0} | <strong>${at('dEvents')}:</strong> ${o.events_count||0} | <strong>${at('dErrors')}:</strong> ${o.errors_count||0}</div>
+      <div><strong>${at('dLastCheck')}:</strong> ${c.last_checked_at||'-'} | <strong>${at('dLastNotify')}:</strong> ${c.last_notified_at||'-'}</div>
+      <hr style="border-color:var(--line)">
+      <div><strong>${at('dRules')}</strong></div>
+      <ul>
+        <li>${at('dAnyChange')}: ${rules.monitor_any_change ? at('enabledYes') : at('enabledNo')}</li>
+        <li>${at('dItemMovement')}: ${rules.monitor_item_movement ? at('enabledYes') : at('enabledNo')} (${at('dThreshold')} ${rules.item_movement_threshold||0})</li>
+        <li>${at('dFailedLogins')}: ${rules.monitor_failed_logins ? at('enabledYes') : at('enabledNo')} (${at('dThreshold')} ${rules.failed_login_threshold||0})</li>
+        <li>${at('dZenyIncrease')}: ${rules.monitor_zeny_increase ? at('enabledYes') : at('enabledNo')} (${at('dThreshold')} ${rules.zeny_increase_threshold||0})</li>
+      </ul>
+      <div><strong>${at('dLatestEvent')}:</strong> ${(o.latest_event||{}).event_time || '-'} | ${(o.latest_event||{}).event_type || '-'} | ${(o.latest_event||{}).summary || '-'}</div>
+      <hr style="border-color:var(--line)">
+      <div><strong>${at('dNotes')}</strong></div>
+      <div>${(c.notes||'-').replaceAll('<','&lt;')}</div>
+    `;
+    openWatchModal(at('details'), html);
+  });
+  document.querySelectorAll('[data-watchtxt]').forEach(btn=>btn.onclick=async()=>{
+    const id = Number(btn.dataset.watchtxt||0);
+    const txt = await fetch(`/api/watch/cases/${id}/export.txt`, {headers:authHeaders()}).then(r=>{ if(!r.ok) throw new Error('Failed export'); return r.text(); });
+    const html = txt.split('\n').map(line=>{
+      const esc = line.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      if(line.startsWith('AggregatorCP Watch Case Export')) return `<h4 style="margin:4px 0 10px 0;">${esc}</h4>`;
+      if(line.startsWith('---')) return `<hr style="border-color:var(--line)">`;
+      if(line.startsWith('[')) return `<div style="padding:4px 6px;border-bottom:1px dashed var(--line);">${esc}</div>`;
+      if(line.includes(':')) return `<div style="padding:2px 0;"><strong>${esc.split(':')[0]}:</strong>${esc.substring(esc.indexOf(':')+1)}</div>`;
+      return `<div>${esc}</div>`;
+    }).join('');
+    openWatchModal(at('txt'), html);
+  });
+}
+
+async function loadWatchCases(){
+  try {
+    const res = await apiGet('/api/watch/cases');
+    WATCH_CASES_CACHE = (res.items||[]);
+    renderWatchCasesTable();
+    setFeedback('watchFeedback', at('loadedCases', {n: WATCH_CASES_CACHE.length}));
+  } catch(e){ setFeedback('watchFeedback', e.message); }
+}
+
+async function loadWatchEvents(caseId){
+  try {
+    const res = await apiGet(`/api/watch/cases/${caseId}/events?limit=100`);
+    const body = $('watchEventsBody'); body.innerHTML='';
+    (res.items||[]).forEach(ev=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${ev.event_time||''}</td><td>${ev.event_type||''}</td><td>${ev.severity||''}</td><td>${ev.summary||''}</td><td>${ev.notified_discord?1:0}</td><td>${ev.notified_telegram?1:0}</td>`;
+      body.appendChild(tr);
+    });
+  } catch(e){ setFeedback('watchFeedback', e.message); }
+}
+
+
+async function searchUserItems(){
+  const q = $('ui_search').value.trim();
+  if(!q){ $('ui_char_pick').innerHTML=''; return; }
+  const res = await apiGet(`/api/user-items/search?q=${encodeURIComponent(q)}&limit=20`);
+  $('ui_char_pick').innerHTML='';
+  (res.items||[]).forEach(it=>{
+    const o=document.createElement('option');
+    o.value=it.char_id;
+    o.dataset.accountId = it.account_id ?? 0;
+    o.textContent = `${it.name} (char:${it.char_id} / acc:${it.account_id})`;
+    $('ui_char_pick').appendChild(o);
+  });
+}
+
+function _fmtItemOptions(opts){
+  if(!opts || !opts.length) return '-';
+  return opts.map(o=>`id:${o.id} v:${o.value}`).join(' | ');
+}
+
+async function loadUserItems(){
+  const charId = Number(($('ui_char_pick').value||'0'));
+  if(!charId){ setFeedback('ui_meta','Select a character first.'); return; }
+  const section = $('ui_section').value;
+  const res = await apiGet(`/api/user-items/list?char_id=${charId}&section=${encodeURIComponent(section)}&limit=400`);
+  const ch = res.character || {};
+  setFeedback('ui_meta', `Character: ${ch.name || '-'} | CharID: ${ch.char_id || 0} | AccountID: ${ch.account_id || 0} | Section: ${res.section || section}`);
+  const body = $('uiTable');
+  body.innerHTML = '';
+  (res.items || []).forEach(it=>{
+    const tr=document.createElement('tr');
+    const cards = (it.cards && it.cards.length) ? it.cards.join(', ') : '-';
+    tr.innerHTML = `<td><a href="#" data-nameid="${it.nameid}" data-charid="${charId}">${it.item_name} (${it.nameid})</a></td><td>${it.amount}</td><td>${it.refine}</td><td>${cards}</td><td>${_fmtItemOptions(it.options)}</td>`;
+    tr.querySelector('a').addEventListener('click', async (ev)=>{
+      ev.preventDefault();
+      await loadUserItemLogs(Number(ev.currentTarget.dataset.charid), Number(ev.currentTarget.dataset.nameid));
+    });
+    body.appendChild(tr);
+  });
+}
+
+async function loadUserItemLogs(charId, nameid, reset=true){
+  if (reset){ ITEM_LOG_OFFSET = 0; ITEM_LOG_CHAR_ID = charId; ITEM_LOG_NAMEID = nameid; }
+  const lim = 10;
+  const res = await apiGet(`/api/user-items/logs?char_id=${charId}&nameid=${nameid}&limit=${lim}&offset=${ITEM_LOG_OFFSET}`);
+  const body = $('uiLogTable');
+  if (reset) body.innerHTML='';
+  (res.items||[]).forEach(it=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${it.time || ''}</td><td>${it.source || ''}</td><td>${it.type || ''}</td><td>${it.amount || 0}</td><td>${it.map || ''}</td>`;
+    body.appendChild(tr);
+  });
+  const got=(res.items||[]).length;
+  ITEM_LOG_OFFSET += got;
+  $('uiLogMoreBtn').style.display = got < lim ? 'none' : 'inline-block';
+}
+
+
+function drawSystemUsageChart(){
+  const c = $('sysUsageChart');
+  if(!c) return;
+  c.width = Math.max(320, c.clientWidth || 320); c.height = 90;
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#0b1020';
+  ctx.fillRect(0,0,w,h);
+  const pad = 26;
+  ctx.strokeStyle = '#2a3550';
+  for(let i=0;i<=4;i++){
+    const y = pad + (h-pad*2)*(i/4);
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke();
+  }
+  const plot=(arr,color)=>{
+    if(arr.length<2) return;
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
+    arr.forEach((v,i)=>{
+      const x = pad + (w-pad*2)*(i/(Math.max(arr.length-1,1)));
+      const y = h-pad - ((Math.max(0,Math.min(100,v))/100)*(h-pad*2));
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  };
+  plot(usageSeries.cpu, '#36cfc9');
+  plot(usageSeries.ram, '#ff7875');
+  ctx.fillStyle='#9fb3d1';
+  ctx.fillText('100%',4,pad+4); ctx.fillText('0%',10,h-pad+4);
+  ctx.fillStyle='#36cfc9'; ctx.fillText('CPU', w-90, 16);
+  ctx.fillStyle='#ff7875'; ctx.fillText('RAM', w-45, 16);
+}
+
+async function refreshSystemUsage(){
+  try {
+    const r = await apiGet('/api/system/usage');
+    usageSeries.cpu.push(Number(r.cpu_percent||0));
+    usageSeries.ram.push(Number(r.memory_percent||0));
+    usageSeries.labels.push(r.ts||0);
+    while(usageSeries.cpu.length>60){ usageSeries.cpu.shift(); usageSeries.ram.shift(); usageSeries.labels.shift(); }
+    setFeedback('sysUsageMeta', `CPU: ${Number(r.cpu_percent||0).toFixed(1)}% | RAM: ${Number(r.memory_percent||0).toFixed(1)}% (${r.memory_used_mb||0}/${r.memory_total_mb||0} MB)`);
+    drawSystemUsageChart();
+  } catch(e){
+    setFeedback('sysUsageMeta', `System usage error: ${e.message || e}`);
+  }
+}
+
+async function refreshStatusAndMaybeNotify(){
+  await refreshStatus();
+}
+
+async function notifyOfflineStatus(){
+  try {
+    const r = await fetch('/api/status/offline-notify', {method:'POST', headers:authHeaders()});
+    const j = await r.json();
+  } catch(_e) {}
+}
+
+function startMonitorIntervals(){
+  if(STATUS_INTERVAL) clearInterval(STATUS_INTERVAL);
+  if(OFFLINE_NOTIFY_INTERVAL) clearInterval(OFFLINE_NOTIFY_INTERVAL);
+  if(USAGE_INTERVAL) clearInterval(USAGE_INTERVAL);
+  const sMs = Math.max(5000, Number($('status_refresh_sec')?.value || 300) * 1000);
+  const oMs = Math.max(5000, Number($('offline_notify_sec')?.value || 300) * 1000);
+  const uMs = Math.max(1000, Number($('usage_refresh_sec')?.value || 5) * 1000);
+  STATUS_INTERVAL = setInterval(refreshStatusAndMaybeNotify, sMs);
+  OFFLINE_NOTIFY_INTERVAL = setInterval(notifyOfflineStatus, oMs);
+  USAGE_INTERVAL = setInterval(refreshSystemUsage, uMs);
+}
+
+
+async function loadCurrentUser(){
+  try {
+    CURRENT_USER = await apiGet('/api/auth/me');
+  } catch(_e){ CURRENT_USER = null; }
+  const isAdmin = !!(CURRENT_USER && CURRENT_USER.role === 'administrator');
+  const canManageWatch = !!(CURRENT_USER && CURRENT_USER.permissions && CURRENT_USER.permissions.manage_watch);
+  $('adminCreateUserWrap').classList.toggle('hidden', !isAdmin);
+  $('createWatchCaseBtn').disabled = !canManageWatch;
+  renderSubMenu();
+}
+
+function renderRolesConfig(cfg){
+  ROLES_CONFIG = cfg;
+  const perms = Object.keys((cfg.role_permissions||{}).administrator || {});
+  const body = $('rolesPermBody'); body.innerHTML='';
+  perms.forEach((perm)=>{
+    const tr=document.createElement('tr');
+    const cm=!!cfg.role_permissions?.community_manager?.[perm];
+    const gm=!!cfg.role_permissions?.game_master?.[perm];
+    const ad=!!cfg.role_permissions?.administrator?.[perm];
+    tr.innerHTML=`<td>${perm}</td><td><input data-roleperm="community_manager:${perm}" type="checkbox" ${cm?'checked':''}></td><td><input data-roleperm="game_master:${perm}" type="checkbox" ${gm?'checked':''}></td><td><input data-roleperm="administrator:${perm}" type="checkbox" ${ad?'checked':''}></td>`;
+    body.appendChild(tr);
+  });
+
+  const ubody = $('rolesUsersBody'); ubody.innerHTML='';
+  (cfg.users||[]).forEach(u=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${u.email}</td><td><select data-userrole="${u.email}"><option value="community_manager">community_manager</option><option value="game_master">game_master</option><option value="administrator">administrator</option></select></td><td><input data-useractive="${u.email}" type="checkbox" ${u.active?'checked':''}></td><td><button data-saveuserrole="${u.email}">Save</button></td>`;
+    ubody.appendChild(tr);
+    tr.querySelector('select').value = u.role;
+  });
+  document.querySelectorAll('[data-saveuserrole]').forEach(btn=>btn.onclick=async()=>{
+    const email = btn.dataset.saveuserrole;
+    const role = document.querySelector(`[data-userrole="${email}"]`).value;
+    const active = document.querySelector(`[data-useractive="${email}"]`).checked;
+    await apiPost('/api/roles/user',{email, role, active});
+    setFeedback('rolesFeedback', `Updated role for ${email}.`);
+    await loadRolesConfig();
+  });
+}
+
+async function loadRolesConfig(){
+  if (!CURRENT_USER || CURRENT_USER.role !== 'administrator') return;
+  try {
+    const cfg = await apiGet('/api/roles/config');
+    renderRolesConfig(cfg);
+    setFeedback('rolesFeedback', 'Role configuration loaded.');
+  } catch(e){ setFeedback('rolesFeedback', e.message); }
+}
+
+$('saveRolesPermBtn').onclick = async()=>{
+  const base = JSON.parse(JSON.stringify(ROLES_CONFIG?.role_permissions || {}));
+  document.querySelectorAll('[data-roleperm]').forEach(el=>{
+    const [role, perm] = el.dataset.roleperm.split(':');
+    if (!base[role]) base[role] = {};
+    base[role][perm] = !!el.checked;
+  });
+  await apiPost('/api/roles/config', {role_permissions: base});
+  setFeedback('rolesFeedback', 'Role permissions saved.');
+  await loadRolesConfig();
+};
+
+function bindLogsButtons(){
+  $('logsMoreBtn').onclick = ()=>refreshLogs(false);
+  $('logsMoreBtnBottom').onclick = ()=>refreshLogs(false);
+  $('logsSource').onchange = ()=>refreshLogs(true);
+  let logsTimer = null;
+  $('logsSearch').addEventListener('input', ()=>{
+    if (logsTimer) clearTimeout(logsTimer);
+    logsTimer = setTimeout(()=>refreshLogs(true), 250);
+  });
+  $('logsSearch').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') refreshLogs(true); });
+
+  const topBtn = $('logsMoreBtn');
+  const scrollTopBtn = $('logsScrollTopBtn');
+  const observer = new IntersectionObserver((entries)=>{
+    const visible = entries[0]?.isIntersecting;
+    scrollTopBtn.classList.toggle('hidden', !!visible);
+  }, {threshold: 0.05});
+  observer.observe(topBtn);
+  scrollTopBtn.onclick = ()=>{ topBtn.scrollIntoView({behavior:'smooth', block:'center'}); };
+}
+
+
+async function initApp(){
+  try {
+    await loadCurrentUser();
+    await loadConfig();
+    await refreshStatus();
+    await notifyOfflineStatus();
+    await refreshSystemUsage();
+    await refreshLogs();
+    await loadRolesConfig();
+    await loadWatchCases();
+    await selectMain('operations', 'health');
+    startMonitorIntervals();
+  } catch(err) {
+    if(String(err).includes('Unauthorized')){
+      localStorage.removeItem('tc_token'); TOKEN=''; $('appWrap').classList.add('hidden'); $('loginWrap').classList.remove('hidden');
+    } else {
+      setFeedback('healthError', `Init error: ${err}`);
+    }
+  }
+}
+
+applyI18n();
+if (TOKEN) { $('loginWrap').classList.add('hidden'); $('appWrap').classList.remove('hidden'); initApp(); }
+</script>
+</body>
+</html>
