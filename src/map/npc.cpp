@@ -5943,8 +5943,11 @@ bool npc_campfire_use_item( map_session_data& sd ){
 		return false;
 
 	npc_data* template_nd = npc_name2id( "CAMPFIRE_TEMPLATE" );
-	if( template_nd == nullptr )
+	if( template_nd == nullptr ){
+		ShowWarning( "npc_campfire_use_item: CAMPFIRE_TEMPLATE not found. Ensure npc/custom/campfire_system.txt is loaded in npc/scripts_custom.conf.\n" );
+		clif_displaymessage( sd.fd, "Campfire system is not loaded. Contact an administrator." );
 		return false;
+	}
 
 	int16 x = sd.x;
 	int16 y = sd.y;
