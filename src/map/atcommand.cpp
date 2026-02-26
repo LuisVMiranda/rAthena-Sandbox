@@ -4924,6 +4924,8 @@ ACMD_FUNC(mapinfo) {
 		strcat(atcmd_output, " NoTomb |");
 	if (map_getmapflag(m_id, MF_NOCOSTUME))
 		strcat(atcmd_output, " NoCostume |");
+	if (map_getmapflag(m_id, MF_NORESS))
+		strcat(atcmd_output, " NoRess |");
 	if (map_getmapflag(m_id, MF_NOBANK))
 		strcat(atcmd_output, " NoBank |");
 	if (map_getmapflag(m_id, MF_NOCASHSHOP))
