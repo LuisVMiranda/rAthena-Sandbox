@@ -9481,6 +9481,7 @@ static const struct _battle_data {
 	{ "feature.campfire_icon",              &battle_config.feature_campfire_icon,           992,    0,      INT_MAX,        },
 	{ "feature.campfire_ground_effect",     &battle_config.feature_campfire_ground_effect,  313,    0,      INT_MAX,        },
 	{ "feature.campfire_language",          &battle_config.feature_campfire_language,       2,      1,      3,              },
+	{ "feature.campfire_npc_name_msg",      &battle_config.feature_campfire_npc_name_msg,   0,      0,      INT_MAX,        },
 	{ "feature.no_mercy_recover_rate",      &battle_config.feature_no_mercy_recover_rate,   20,     0,      100,            },
 
 	{ "mob_respawn_time",                   &battle_config.mob_respawn_time,                1000,   1000,   INT_MAX,        },

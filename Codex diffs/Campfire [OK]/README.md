@@ -6,6 +6,7 @@ Reusable diff package for an item-driven temporary campfire system.
 - Consumes **Matchstick** (`item_id: 7035`) on use.
 - Spawns a temporary **bonfire NPC sprite** (`class: 10252`) near the player.
 - Duration, pulse interval, regen rates, range, cooldown and icon are now configurable via `battle_config` entries (`feature.campfire_*`).
+- Summoned duplicate NPC name can be configured with `feature.campfire_npc_name_msg` (supports `{player}` token for dynamic owner names).
 - Disabled automatically on **GvG** and **Battleground** maps.
 - Supports mapflag **`nocampfire`** (constant `MF_NOCAMPFIRE`) to block Matchstick usage per-map.
 - Campfire logic updates every 1000ms for zone/visual sync, while healing cadence follows `feature.campfire_tick_interval`.

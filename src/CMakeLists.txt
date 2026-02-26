@@ -10,6 +10,11 @@ mark_as_advanced( RA_INCLUDE_DIRS )
 
 
 
+set( CUSTOM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/custom"
+	CACHE PATH "custom source directory" )
+mark_as_advanced( CUSTOM_SOURCE_DIR )
+
+
 add_subdirectory( common )
 if( HAVE_common )
 	option( BUILD_SERVERS "build server executables" ON )

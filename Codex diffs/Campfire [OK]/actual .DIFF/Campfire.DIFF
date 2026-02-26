@@ -1646,3 +1646,113 @@ index a580839..fb7e943 100644
  			}
  		}
  	}
+
+
+# --- Incremental update: configurable campfire duplicate name ---
+diff --git a/Codex diffs/Campfire [OK]/README.md b/Codex diffs/Campfire [OK]/README.md
+index 113eb98..ffa9114 100644
+--- a/Codex diffs/Campfire [OK]/README.md	
++++ b/Codex diffs/Campfire [OK]/README.md	
+@@ -6,6 +6,7 @@ Reusable diff package for an item-driven temporary campfire system.
+ - Consumes **Matchstick** (`item_id: 7035`) on use.
+ - Spawns a temporary **bonfire NPC sprite** (`class: 10252`) near the player.
+ - Duration, pulse interval, regen rates, range, cooldown and icon are now configurable via `battle_config` entries (`feature.campfire_*`).
++- Summoned duplicate NPC name can be configured with `feature.campfire_npc_name_msg` (supports `{player}` token for dynamic owner names).
+ - Disabled automatically on **GvG** and **Battleground** maps.
+ - Supports mapflag **`nocampfire`** (constant `MF_NOCAMPFIRE`) to block Matchstick usage per-map.
+ - Campfire logic updates every 1000ms for zone/visual sync, while healing cadence follows `feature.campfire_tick_interval`.
+diff --git a/Codex diffs/Campfire [OK]/required files/conf/battle/feature.conf.snippet.txt b/Codex diffs/Campfire [OK]/required files/conf/battle/feature.conf.snippet.txt
+index 0dc06a7..4702bcb 100644
+--- a/Codex diffs/Campfire [OK]/required files/conf/battle/feature.conf.snippet.txt	
++++ b/Codex diffs/Campfire [OK]/required files/conf/battle/feature.conf.snippet.txt	
+@@ -14,4 +14,5 @@ feature.campfire_ground_skill: 653
+ feature.campfire_ground_skill_lv: 1
+ feature.campfire_ground_effect: 313
+ feature.campfire_language: 1
++feature.campfire_npc_name_msg: 0
+ feature.no_mercy_recover_rate: 20
+diff --git a/conf/battle/feature.conf b/conf/battle/feature.conf
+index 095605b..4b96de1 100644
+--- a/conf/battle/feature.conf
++++ b/conf/battle/feature.conf
+@@ -213,6 +213,8 @@ feature.campfire_icon: 992
+ feature.campfire_ground_effect: 313
+ // Campfire display language: 1=English, 2=Portuguese, 3=Spanish
+ feature.campfire_language: 2
++// Optional map_msg.conf id for summoned campfire NPC name (supports {player} token). 0 uses "Campfire".
++feature.campfire_npc_name_msg: 0
+ 
+ // No Mercy mapflag recovery modifier (% of original recover kept).
+ // Example: 20 = keep only 20% (80% reduction) on maps with mapflag no_mercy.
+diff --git a/src/map/battle.cpp b/src/map/battle.cpp
+index 5b681b1..1359d12 100644
+--- a/src/map/battle.cpp
++++ b/src/map/battle.cpp
+@@ -9481,6 +9481,7 @@ static const struct _battle_data {
+ 	{ "feature.campfire_icon",              &battle_config.feature_campfire_icon,           992,    0,      INT_MAX,        },
+ 	{ "feature.campfire_ground_effect",     &battle_config.feature_campfire_ground_effect,  313,    0,      INT_MAX,        },
+ 	{ "feature.campfire_language",          &battle_config.feature_campfire_language,       2,      1,      3,              },
++	{ "feature.campfire_npc_name_msg",      &battle_config.feature_campfire_npc_name_msg,   0,      0,      INT_MAX,        },
+ 	{ "feature.no_mercy_recover_rate",      &battle_config.feature_no_mercy_recover_rate,   20,     0,      100,            },
+ 
+ 	{ "mob_respawn_time",                   &battle_config.mob_respawn_time,                1000,   1000,   INT_MAX,        },
+diff --git a/src/map/battle.hpp b/src/map/battle.hpp
+index 3db5e3a..cbbb280 100644
+--- a/src/map/battle.hpp
++++ b/src/map/battle.hpp
+@@ -775,6 +775,7 @@ struct Battle_Config
+ 	int32 feature_campfire_icon;
+ 	int32 feature_campfire_ground_effect;
+ 	int32 feature_campfire_language;
++	int32 feature_campfire_npc_name_msg;
+ 	int32 feature_no_mercy_recover_rate;
+ 
+ 	int32 mob_respawn_time;
+diff --git a/src/map/npc.cpp b/src/map/npc.cpp
+index 302a04a..3608971 100644
+--- a/src/map/npc.cpp
++++ b/src/map/npc.cpp
+@@ -5951,6 +5951,25 @@ static const char* npc_campfire_localized( map_session_data* sd, uint8 key, cons
+ 	return msg_txt( sd, msg_id );
+ }
+ 
++static void npc_campfire_build_name( map_session_data& sd, char (&campfire_name)[NPC_NAME_LENGTH + 1] ){
++	const char* default_name = "Campfire";
++	safestrncpy( campfire_name, default_name, sizeof(campfire_name) );
++
++	if( battle_config.feature_campfire_npc_name_msg <= 0 )
++		return;
++
++	const char* configured_name = msg_txt( &sd, battle_config.feature_campfire_npc_name_msg );
++	if( configured_name == nullptr || *configured_name == '\0' || strcmp( configured_name, "??" ) == 0 )
++		return;
++
++	std::string dynamic_name = configured_name;
++	const std::string token = "{player}";
++	for( size_t pos = 0; ( pos = dynamic_name.find( token, pos ) ) != std::string::npos; pos += strlen( sd.status.name ) )
++		dynamic_name.replace( pos, token.size(), sd.status.name );
++
++	safestrncpy( campfire_name, dynamic_name.c_str(), sizeof(campfire_name) );
++}
++
+ bool npc_campfire_use_item( map_session_data& sd ){
+ 	if( pc_isdead( &sd ) )
+ 		return false;
+@@ -5986,7 +6005,8 @@ bool npc_campfire_use_item( map_session_data& sd ){
+ 	if( !map_search_freecell( &sd, 0, &x, &y, 3, 3, 0 ) )
+ 		return false;
+ 
+-	char campfire_name[NPC_NAME_LENGTH + 1] = "Campfire";
++	char campfire_name[NPC_NAME_LENGTH + 1];
++	npc_campfire_build_name( sd, campfire_name );
+ 	npc_data* campfire_nd = npc_duplicate_npc( *template_nd, campfire_name, sd.m, x, y, 10252, DIR_NORTH, -1, -1, nullptr );
+ 	if( campfire_nd == nullptr )
+ 		return false;
+@@ -6013,6 +6033,7 @@ bool npc_campfire_use_item( map_session_data& sd ){
+ 	return true;
+ }
+ 
++
+ static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
+ 	map_session_data* tsd = BL_CAST( BL_PC, bl );
+ 	if( tsd == nullptr )
