@@ -65,6 +65,8 @@ Thumbs.db
 
 # /db/
 /db/import
+!/db/import/
+!/db/import/mapflag_mobdrop.yml
 
 # /conf/
 /conf/import

@@ -5517,6 +5517,42 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
 			break;
 		}
 
+		case MF_MOBDROP: {
+			union u_mapflag_args args = {};
+			int32 item_id = 0;
+			int32 rate = 0;
+			int32 mob_id = 0;
+
+			if (!state || !strcmpi(w4, "off")) {
+				map_setmapflag(m, MF_MOBDROP, false);
+				break;
+			}
+
+			int32 parsed = sscanf(w4, "%11d,%11d,%11d", &item_id, &rate, &mob_id);
+
+			if (parsed < 2) {
+				ShowWarning("npc_parse_mapflag: Invalid mobdrop args '%s' (file '%s', line '%d').\n", w4, filepath, strline(buffer, start - buffer));
+				break;
+			}
+
+			if (!item_db.exists(item_id)) {
+				ShowWarning("npc_parse_mapflag: Invalid item id %d for mobdrop mapflag (file '%s', line '%d').\n", item_id, filepath, strline(buffer, start - buffer));
+				break;
+			}
+
+			if (parsed >= 3 && !mob_db.exists(static_cast<uint16>(mob_id))) {
+				ShowWarning("npc_parse_mapflag: Invalid mob id %d for mobdrop mapflag (file '%s', line '%d').\n", mob_id, filepath, strline(buffer, start - buffer));
+				break;
+			}
+
+			args.mobdrop.item_id = static_cast<uint16>(item_id);
+			args.mobdrop.rate = static_cast<uint16>(cap_value(rate, 1, 10000));
+			args.mobdrop.mob_id = static_cast<uint16>(parsed >= 3 ? mob_id : 0);
+
+			map_setmapflag_sub(m, MF_MOBDROP, true, &args);
+			break;
+		}
+
 		case MF_BATTLEGROUND:
 			if (state) {
 				union u_mapflag_args args = {};

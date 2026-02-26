@@ -4920,6 +4920,23 @@ bool map_setmapflag_sub(int16 m, enum e_mapflag mapflag, bool status, union u_ma
 			} else
 				mapdata->setMapFlag(mapflag, false);
 			break;
+		case MF_MOBDROP:
+			if (!status) {
+				mapdata->mobdrop_rules.clear();
+				mapdata->setMapFlag(mapflag, false);
+				break;
+			}
+
+			nullpo_retr(false, args);
+
+			if (mapdata->mobdrop_rules.size() >= MAX_MOBDROP_RULES_PER_MAP) {
+				ShowWarning("map_setmapflag: Reached max MF_MOBDROP rules on map %s (%d). Skipping.\n", mapdata->name, MAX_MOBDROP_RULES_PER_MAP);
+				return false;
+			}
+
+			mapdata->mobdrop_rules.push_back(args->mobdrop);
+			mapdata->setMapFlag(mapflag, true);
+			break;
 		case MF_BATTLEGROUND:
 			if (status) {
 				nullpo_retr(false, args);
