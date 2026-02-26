@@ -32,3 +32,5 @@ Create a mapflag system (`mobdrop`) that supports both legacy script mapflag lin
 - Keeps legacy `mapflag mobdrop` parser behavior.
 - YAML and legacy rules are additive.
 - No SQL migration required.
+
+- Map supports `all` or `*` to apply a rule globally on all maps.

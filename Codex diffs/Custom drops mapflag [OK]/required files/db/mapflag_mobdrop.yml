@@ -22,6 +22,15 @@
 #   - Character, character, Char, char, char_bound, BOUND_CHAR
 #
 # ---------------------------------------------------------------------------
+# MAP TARGET BEHAVIOR
+# ---------------------------------------------------------------------------
+# Map accepts either a specific map name or global keywords:
+#   - all
+#   - *
+#
+# Using all/* applies the rule globally across every map.
+#
+# ---------------------------------------------------------------------------
 # MONSTER FILTER BEHAVIOR
 # ---------------------------------------------------------------------------
 # You can choose EITHER:
@@ -51,7 +60,7 @@ Body:
   # ============================================================
   # COMPLETE BOILERPLATE (PRODUCTION TEMPLATE)
   # ============================================================
-  # - Map: <map_name>
+  # - Map: <map_name | all | *>
   #   Monster: <mob_aegis_name | All | *>           # optional
   #   Monsters:                                     # optional (use instead of Monster)
   #     - <mob_aegis_name>
@@ -64,8 +73,8 @@ Body:
   #   Bind: <see accepted values above>             # optional (defaults to Free)
   #   RandomOptionGroup: <group_name>               # optional
 
-  # Example A: any monster in prontera, fixed 2.50%, free-trade item drop
-  # - Map: prontera
+  # Example A: any monster on all maps, fixed 2.50%, free-trade item drop
+  # - Map: all
   #   Monster: All
   #   Item: Apple
   #   Rate:

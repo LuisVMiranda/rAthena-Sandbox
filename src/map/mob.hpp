@@ -324,6 +324,7 @@ struct s_mapflag_mobdrop_rule {
 
 struct s_mapflag_mobdrop_db {
 	uint16 mapid;
+	bool is_global;
 	std::vector<s_mapflag_mobdrop_rule> rules;
 };
 

@@ -23,7 +23,7 @@ After applying the diff:
 - Two configuration modes:
   1. Legacy script mapflag line: `<mapname> mapflag mobdrop <item_id>,<rate>{,<mob_id>}`
   2. YAML database (`db/mapflag_mobdrop.yml`) with:
-     - map
+     - map (specific map name or global `all`/`*`)
      - single monster OR monster list
      - dynamic rate (`Min`/`Max`)
      - bind mode (free/account/char)

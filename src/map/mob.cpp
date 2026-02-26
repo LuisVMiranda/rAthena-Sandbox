@@ -3465,6 +3465,8 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 		}
 
 		// Process YAML-driven MF_MOBDROP rules
+		std::vector<std::shared_ptr<s_mapflag_mobdrop_db>> yaml_rule_sets;
+		std::shared_ptr<s_mapflag_mobdrop_db> yaml_global = mapflag_mobdrop_db.find(UINT16_MAX);
 		std::shared_ptr<s_mapflag_mobdrop_db> yaml_mobdrop;
 
 		if (map[md->m].instance_id > 0)
@@ -3472,8 +3474,13 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 		else
 			yaml_mobdrop = mapflag_mobdrop_db.find(md->m);
 
-		if (yaml_mobdrop != nullptr) {
-			for (const s_mapflag_mobdrop_rule& rule : yaml_mobdrop->rules) {
+		if (yaml_mobdrop != nullptr)
+			yaml_rule_sets.push_back(yaml_mobdrop);
+		if (yaml_global != nullptr)
+			yaml_rule_sets.push_back(yaml_global);
+
+		for (const std::shared_ptr<s_mapflag_mobdrop_db>& rule_set : yaml_rule_sets) {
+			for (const s_mapflag_mobdrop_rule& rule : rule_set->rules) {
 				if (!rule.mob_ids.empty() && std::find(rule.mob_ids.begin(), rule.mob_ids.end(), md->mob_id) == rule.mob_ids.end())
 					continue;
 
@@ -7199,26 +7206,37 @@ uint64 MapFlagMobDropDatabase::parseBodyNode(const ryml::NodeRef& node){
 		return 0;
 	}
 
-	uint16 mapindex = mapindex_name2idx( mapname.c_str(), nullptr );
+	uint16 map_key = 0;
+	bool is_global = false;
 
-	if( mapindex == 0 ){
-		this->invalidWarning( node["Map"], "Unknown map \"%s\".\n", mapname.c_str() );
-		return 0;
+	if( strcmpi( mapname.c_str(), "all" ) == 0 || mapname == "*" ){
+		map_key = UINT16_MAX;
+		is_global = true;
+	}else{
+		uint16 mapindex = mapindex_name2idx( mapname.c_str(), nullptr );
+
+		if( mapindex == 0 ){
+			this->invalidWarning( node["Map"], "Unknown map \"%s\".\n", mapname.c_str() );
+			return 0;
+		}
+
+		int16 mapid = map_mapindex2mapid( mapindex );
+
+		if( mapid < 0 ){
+			// Silently ignore. Map might be on a different map-server.
+			return 0;
+		}
+
+		map_key = static_cast<uint16>( mapid );
 	}
 
-	int16 mapid = map_mapindex2mapid( mapindex );
-
-	if( mapid < 0 ){
-		// Silently ignore. Map might be on a different map-server.
-		return 0;
-	}
-
-	std::shared_ptr<s_mapflag_mobdrop_db> mapdrops = this->find( mapid );
+	std::shared_ptr<s_mapflag_mobdrop_db> mapdrops = this->find( map_key );
 	bool exists = mapdrops != nullptr;
 
 	if( !exists ){
 		mapdrops = std::make_shared<s_mapflag_mobdrop_db>();
-		mapdrops->mapid = mapid;
+		mapdrops->mapid = map_key;
+		mapdrops->is_global = is_global;
 	}
 
 	s_mapflag_mobdrop_rule rule = {};
@@ -7380,7 +7398,7 @@ uint64 MapFlagMobDropDatabase::parseBodyNode(const ryml::NodeRef& node){
 	mapdrops->rules.push_back( rule );
 
 	if( !exists ){
-		this->put( mapid, mapdrops );
+		this->put( map_key, mapdrops );
 	}
 
 	return 1;
