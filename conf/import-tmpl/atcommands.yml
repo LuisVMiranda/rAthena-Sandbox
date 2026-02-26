@@ -31,3 +31,17 @@
 Header:
   Type: ATCOMMAND_DB
   Version: 1
+
+Body:
+  # Migrated from diffs/Hidepet/[Daegaladh] hidepet 2.2.diff
+  - Command: hidepet
+    Aliases:
+      - hidepets
+    Help: |
+      Hides or shows all pets except yours.
+  - Command: hidepetall
+    Aliases:
+      - hideallpet
+      - hideallpets
+    Help: |
+      Hides or shows all pets, including yours.

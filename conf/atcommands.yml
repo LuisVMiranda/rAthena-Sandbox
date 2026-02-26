@@ -559,6 +559,13 @@ Body:
   - Command: hide
     Help: |
       Makes you character invisible (GM invisibility). Type again to become visible.
+  - Command: hidepet
+    Aliases:
+      - hidepetall
+    Help: |
+      Hides or shows pets around you.
+      @hidepet hides other players' pets.
+      @hidepetall hides all pets, including yours.
   - Command: hidenpc
     Help: |
       Params: <NPC name>

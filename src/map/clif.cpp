@@ -422,6 +422,8 @@ static int32 clif_send_sub(block_list *bl, va_list ap)
 	case AREA_WOS:
 		if (bl == src_bl)
 			return 0;
+		if (src_bl->type == BL_PET && (sd->state.hidepet == 2 || (sd->state.hidepet == 1 && !(sd->pd != nullptr && sd->pd->id == src_bl->id))))
+			return 0;
 	break;
 	case AREA_WOC:
 		if (sd->chatID || bl == src_bl)
@@ -5040,6 +5042,10 @@ void clif_getareachar_unit( map_session_data* sd,block_list *bl ){
 
 	// Hide NPC from Maya Purple card
 	if( clif_npc_mayapurple( *bl ) ){
+		return;
+	}
+
+	if (bl->type == BL_PET && (sd->state.hidepet == 2 || (sd->state.hidepet == 1 && !(sd->pd != nullptr && sd->pd->id == bl->id)))) {
 		return;
 	}
 
