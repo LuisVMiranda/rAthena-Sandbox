@@ -525,6 +525,7 @@
 	export_constant(MF_PRIVATEAIRSHIP_SOURCE);
 	export_constant(MF_PRIVATEAIRSHIP_DESTINATION);
 	export_constant(MF_SKILL_DURATION);
+	export_constant(MF_NORESS);
 	export_constant(MF_NOCASHSHOP);
 	export_constant(MF_NORODEX);
 	export_constant(MF_NORENEWALDROPPENALTY);

@@ -1,5 +1,5 @@
 diff --git a/conf/msg_conf/map_msg.conf b/conf/msg_conf/map_msg.conf
-index adf1cf4..278595e 100644
+index 3713971..b6af2c7 100644
 --- a/conf/msg_conf/map_msg.conf
 +++ b/conf/msg_conf/map_msg.conf
 @@ -467,6 +467,7 @@
@@ -11,10 +11,10 @@ index adf1cf4..278595e 100644
  // Message System
  460: Please enter a valid language (usage: @langtype <language>).
 diff --git a/src/map/atcommand.cpp b/src/map/atcommand.cpp
-index 30d14f7..881b5e5 100644
+index c09263d..3c6205d 100644
 --- a/src/map/atcommand.cpp
 +++ b/src/map/atcommand.cpp
-@@ -4914,6 +4914,8 @@ ACMD_FUNC(mapinfo) {
+@@ -4924,6 +4924,8 @@ ACMD_FUNC(mapinfo) {
  		strcat(atcmd_output, " NoTomb |");
  	if (map_getmapflag(m_id, MF_NOCOSTUME))
  		strcat(atcmd_output, " NoCostume |");
@@ -24,14 +24,14 @@ index 30d14f7..881b5e5 100644
  		strcat(atcmd_output, " NoBank |");
  	if (map_getmapflag(m_id, MF_NOCASHSHOP))
 diff --git a/src/map/clif.cpp b/src/map/clif.cpp
-index d3f4c71..998a1d2 100644
+index ebbdb35..e6bd001 100644
 --- a/src/map/clif.cpp
 +++ b/src/map/clif.cpp
-@@ -15777,6 +15777,11 @@ void clif_parse_HomMenu(int32 fd, map_session_data *sd)
+@@ -15783,6 +15783,11 @@ void clif_parse_HomMenu(int32 fd, map_session_data *sd)
  /// 0292
  void clif_parse_AutoRevive(int32 fd, map_session_data *sd)
  {
-+	if (map_getmapflag(sd->bl.m, MF_NORESS)) {
++	if (map_getmapflag(sd->m, MF_NORESS)) {
 +		clif_displaymessage(sd->fd, msg_txt(sd, 452));
 +		return;
 +	}
@@ -40,10 +40,10 @@ index d3f4c71..998a1d2 100644
  }
  
 diff --git a/src/map/map.hpp b/src/map/map.hpp
-index d32f752..ec2e5aa 100644
+index 1ce9894..c18acb8 100644
 --- a/src/map/map.hpp
 +++ b/src/map/map.hpp
-@@ -684,6 +684,7 @@ enum e_mapflag : int16 {
+@@ -688,6 +688,7 @@ enum e_mapflag : int16 {
  	MF_PRIVATEAIRSHIP_SOURCE,
  	MF_PRIVATEAIRSHIP_DESTINATION,
  	MF_SKILL_DURATION,
@@ -52,7 +52,7 @@ index d32f752..ec2e5aa 100644
  	MF_NORODEX,
  	MF_NORENEWALEXPPENALTY,
 diff --git a/src/map/script_constants.hpp b/src/map/script_constants.hpp
-index b2d500d..d73451c 100644
+index d3fb3ea..622dde4 100644
 --- a/src/map/script_constants.hpp
 +++ b/src/map/script_constants.hpp
 @@ -525,6 +525,7 @@
@@ -63,3 +63,29 @@ index b2d500d..d73451c 100644
  	export_constant(MF_NOCASHSHOP);
  	export_constant(MF_NORODEX);
  	export_constant(MF_NORENEWALDROPPENALTY);
+diff --git a/src/map/skill.cpp b/src/map/skill.cpp
+index 2516604..b4f5322 100644
+--- a/src/map/skill.cpp
++++ b/src/map/skill.cpp
+@@ -4761,6 +4761,8 @@ int32 skill_castend_nodamage_id (block_list *src, block_list *bl, uint16 skill_i
+ 		break;
+ 
+ 	case ALL_RESURRECTION:
++		if (map_getmapflag(bl->m, MF_NORESS))
++			break;
+ 		if(sd && (map_flag_gvg2(bl->m) || map_getmapflag(bl->m, MF_BATTLEGROUND)))
+ 		{	//No reviving in WoE grounds!
+ 			clif_skill_fail( *sd, skill_id );
+diff --git a/src/map/skills/acolyte/redemptio.cpp b/src/map/skills/acolyte/redemptio.cpp
+index 0b55a7d..191ab4b 100644
+--- a/src/map/skills/acolyte/redemptio.cpp
++++ b/src/map/skills/acolyte/redemptio.cpp
+@@ -57,6 +57,8 @@ void SkillRedemptio::castendNoDamageId(block_list* src, block_list* target, uint
+ 		clif_skill_fail( *sd, getSkillId() );
+ 		return;
+ 	}
++	if (map_getmapflag(target->m, MF_NORESS))
++		return;
+ 	if (!status_isdead(*target))
+ 		return;
+ 

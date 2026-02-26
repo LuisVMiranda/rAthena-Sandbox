@@ -57,6 +57,8 @@ void SkillRedemptio::castendNoDamageId(block_list* src, block_list* target, uint
 		clif_skill_fail( *sd, getSkillId() );
 		return;
 	}
+	if (map_getmapflag(target->m, MF_NORESS))
+		return;
 	if (!status_isdead(*target))
 		return;
 
