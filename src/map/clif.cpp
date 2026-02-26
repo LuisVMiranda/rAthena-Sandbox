@@ -15783,7 +15783,7 @@ void clif_parse_HomMenu(int32 fd, map_session_data *sd)
 /// 0292
 void clif_parse_AutoRevive(int32 fd, map_session_data *sd)
 {
-	if (map_getmapflag(sd->bl.m, MF_NORESS)) {
+	if (map_getmapflag(sd->m, MF_NORESS)) {
 		clif_displaymessage(sd->fd, msg_txt(sd, 452));
 		return;
 	}
