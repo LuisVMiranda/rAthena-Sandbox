@@ -2411,6 +2411,10 @@ int32 status_base_amotion_pc(map_session_data* sd, struct status_data* status)
 
 	// Raw delay adjustment from bAspd bonus
 	amotion += sd->bonus.aspd_add;
+
+	// Pre-Renewal ASPD cannot go below 0 (which would produce negative ASPD displays and overly delayed damage).
+	// Keep amotion below the zero-ASPD threshold to prevent invalid states when databases or bonuses are misconfigured.
+	amotion = min(amotion, AMOTION_ZERO_ASPD - 1);
 	return amotion;
 #endif
 }
@@ -6412,7 +6416,8 @@ void status_calc_bl_main(block_list& bl, std::bitset<SCB_MAX> flag)
 			amotion += sd->bonus.aspd_add;
 #endif
 			amotion = status_calc_fix_aspd(&bl, sc, amotion);
-			status->amotion = cap_value(amotion, pc_maxaspd(sd)/AMOTION_DIVIDER_PC, MIN_ASPD/AMOTION_DIVIDER_PC);
+			// Prevent invalid negative ASPD display/behavior in pre-renewal by clamping to below zero-ASPD threshold.
+			status->amotion = cap_value(amotion, pc_maxaspd(sd)/AMOTION_DIVIDER_PC, AMOTION_ZERO_ASPD - 1);
 
 			status->adelay = AMOTION_DIVIDER_PC * status->amotion;
 		} else { // Mercenary and mobs

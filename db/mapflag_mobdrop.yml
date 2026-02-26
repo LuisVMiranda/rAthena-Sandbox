@@ -1,0 +1,98 @@
+# This file is a part of rAthena.
+# MF_MOBDROP YAML database.
+#
+# ---------------------------------------------------------------------------
+# RATE / PERCENTAGE NOTES
+# ---------------------------------------------------------------------------
+# Rates use the same 1..10000 system used by many drop systems in rAthena:
+#   1      = 0.01%
+#   100    = 1.00%
+#   1000   = 10.00%
+#   10000  = 100.00%
+#
+# If Min and Max are both set, one random value between Min..Max is selected
+# per kill, then rolled as the final chance.
+#
+# ---------------------------------------------------------------------------
+# BIND ACCEPTED VALUES
+# ---------------------------------------------------------------------------
+# Bind supports all of the following aliases:
+#   - Free, free, Trade, trade, none, BOUND_NONE
+#   - Account, account, account_bound, BOUND_ACCOUNT
+#   - Character, character, Char, char, char_bound, BOUND_CHAR
+#
+# ---------------------------------------------------------------------------
+# MONSTER FILTER BEHAVIOR
+# ---------------------------------------------------------------------------
+# You can choose EITHER:
+#   1) Monster: <single monster aegis name | All | *>
+#   2) Monsters: [ <monster1>, <monster2>, ... ]
+#
+# If no Monster/Monsters field is provided, the rule applies to all monsters.
+#
+# ---------------------------------------------------------------------------
+# ITEM SOURCE BEHAVIOR
+# ---------------------------------------------------------------------------
+# You must choose EXACTLY ONE of:
+#   - Item: <item aegis name>
+#   - ItemGroup: <group id OR group constant like IG_ORE>
+#
+# ItemGroup behavior in MF_MOBDROP: one item is selected from subgroup 1
+# using the list only; item-group internal drop-rate percentages are ignored.
+# Final drop chance is always controlled by this file's Rate.Min/Rate.Max.
+#
+# RandomOptionGroup is optional and must exist in item_randomopt_group.yml.
+
+Header:
+  Type: MAPFLAG_MOBDROP_DB
+  Version: 1
+
+Body:
+  # ============================================================
+  # COMPLETE BOILERPLATE (PRODUCTION TEMPLATE)
+  # ============================================================
+  # - Map: <map_name>
+  #   Monster: <mob_aegis_name | All | *>           # optional
+  #   Monsters:                                     # optional (use instead of Monster)
+  #     - <mob_aegis_name>
+  #     - <mob_aegis_name>
+  #   Item: <item_aegis_name>                       # required if ItemGroup is absent
+  #   ItemGroup: <group_id_or_constant>             # required if Item is absent
+  #   Rate:
+  #     Min: <1..10000>                             # required
+  #     Max: <1..10000>                             # optional (defaults to Min)
+  #   Bind: <see accepted values above>             # optional (defaults to Free)
+  #   RandomOptionGroup: <group_name>               # optional
+
+  # Example A: any monster in prontera, fixed 2.50%, free-trade item drop
+  # - Map: prontera
+  #   Monster: All
+  #   Item: Apple
+  #   Rate:
+  #     Min: 250
+  #   Bind: Free
+
+  # Example B: specific monster list, dynamic chance, account-bound, random options
+  # - Map: geffen
+  #   Monsters:
+  #     - Poring
+  #     - Drops
+  #   Item: Jellopy
+  #   Rate:
+  #     Min: 100
+  #     Max: 350
+  #   Bind: Account
+  #   RandomOptionGroup: Group_Test
+
+  # Example C: random item from an ItemGroup pool
+  # - Map: payon
+  #   Monster: Poporing
+  #   ItemGroup: IG_ORE
+  #   Rate:
+  #     Min: 75
+  #     Max: 200
+  #   Bind: Character
+
+Footer:
+  Imports:
+    - Path: db/import/mapflag_mobdrop.yml

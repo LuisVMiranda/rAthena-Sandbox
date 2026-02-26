@@ -536,6 +536,7 @@
 	export_constant(MF_SPECIALPOPUP);
 	export_constant(MF_NOMACROCHECKER);
 	export_constant(MF_INVINCIBLE_TIME);
+	export_constant(MF_MOBDROP);
 	export_constant(MF_FRIENDLY_FIRE);
 	export_constant(MF_NOCAMPFIRE);
 	export_constant(MF_NO_MERCY);

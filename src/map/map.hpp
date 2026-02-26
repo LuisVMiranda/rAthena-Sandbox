@@ -77,6 +77,7 @@ void map_msg_reload(void);
 #define MAX_FLOORITEM START_ACCOUNT_NUM
 #define MAX_LEVEL 275
 #define MAX_DROP_PER_MAP 48
+#define MAX_MOBDROP_RULES_PER_MAP 128
 #define MAX_IGNORE_LIST 20 	// official is 14
 #define MAX_VENDING 12
 #define MAX_MAP_SIZE 512*512 	// Wasn't there something like this already? Can't find it.. [Shinryo]
@@ -698,6 +699,7 @@ enum e_mapflag : int16 {
 	MF_SPECIALPOPUP,
 	MF_NOMACROCHECKER,
 	MF_INVINCIBLE_TIME,
+	MF_MOBDROP,
 	MF_FRIENDLY_FIRE,
 	MF_NOCAMPFIRE,
 	MF_NO_MERCY,
@@ -741,12 +743,20 @@ struct s_drop_list {
 	enum e_nightmare_drop_type drop_type;
 };
 
+/// Struct for MF_MOBDROP
+struct s_mapflag_mobdrop {
+	uint16 item_id;
+	uint16 rate;
+	uint16 mob_id; // 0 = any mob
+};
+
 /// Union for mapflag values
 union u_mapflag_args {
 	struct point nosave;
 	struct s_drop_list nightmaredrop;
 	struct s_skill_damage skill_damage;
 	struct s_skill_duration skill_duration;
+	struct s_mapflag_mobdrop mobdrop;
 	int32 flag_val;
 };
 
@@ -841,6 +851,7 @@ struct map_data {
 
 	struct point save;
 	std::vector<s_drop_list> drop_list;
+	std::vector<s_mapflag_mobdrop> mobdrop_rules;
 	uint32 zone; // zone number (for item/skill restrictions)
 	struct s_skill_damage damage_adjust; // Used for overall skill damage adjustment
 	std::unordered_map<uint16, s_skill_damage> skill_damage; // Used for single skill damage adjustment

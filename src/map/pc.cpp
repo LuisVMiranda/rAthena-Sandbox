@@ -10287,7 +10287,7 @@ int64 pc_readparam( const map_session_data* sd, int64 type )
 		case SP_COOKMASTERY:     val = sd->cook_mastery; break;
 		case SP_ACHIEVEMENT_LEVEL: val = sd->achievement_data.level; break;
 		case SP_CRITICAL:        val = sd->battle_status.cri/10; break;
-		case SP_ASPD:            val = (AMOTION_ZERO_ASPD-sd->battle_status.amotion)/AMOTION_INTERVAL; break;
+		case SP_ASPD:            val = max(0, (AMOTION_ZERO_ASPD - sd->battle_status.amotion) / AMOTION_INTERVAL); break;
 		case SP_BASE_ATK:
 #ifdef RENEWAL
 			val = sd->bonus.eatk;

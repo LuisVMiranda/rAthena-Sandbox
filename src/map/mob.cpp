@@ -85,6 +85,7 @@ std::unordered_map<uint32, std::shared_ptr<s_item_drop_list>> mob_looted_drops;
 MobSummonDatabase mob_summon_db;
 MobChatDatabase mob_chat_db;
 MapDropDatabase map_drop_db;
+MapFlagMobDropDatabase mapflag_mobdrop_db;
 
 /*==========================================
  * Local prototype declaration   (only required thing)
@@ -2931,6 +2932,28 @@ map_session_data* mob_data::get_mvp_player(map_session_data* first_sd) {
  * Signals death of mob.
  * type&1 -> no drops, type&2 -> no exp
  *------------------------------------------*/
+static t_itemid mapflag_mobdrop_pick_itemgroup_item( uint16 group_id ){
+	std::shared_ptr<s_item_group_db> group = itemdb_group.find( group_id );
+
+	if( group == nullptr ){
+		return 0;
+	}
+
+	std::shared_ptr<s_item_group_random> subgroup = util::umap_find( group->random, static_cast<uint16>(1) );
+
+	if( subgroup == nullptr || subgroup->data.empty() ){
+		return 0;
+	}
+
+	std::shared_ptr<s_item_group_entry> entry = util::umap_random( subgroup->data );
+
+	if( entry == nullptr ){
+		return 0;
+	}
+
+	return entry->nameid;
+}
+
 int32 mob_dead(mob_data *md, block_list *src, int32 type)
 {
 	struct status_data *status;
@@ -3418,6 +3441,65 @@ int32 mob_dead(mob_data *md, block_list *src, int32 type)
 						mob_item_drop( md, dlist, ditem, 0, map_drops_rate, homkillonly || merckillonly );
 					}
 				}
+			}
+		}
+
+		// Process MF_MOBDROP mapflag rules (legacy script mapflag lines)
+		if (map_getmapflag(md->m, MF_MOBDROP)) {
+			for (const s_mapflag_mobdrop& rule : map[md->m].mobdrop_rules) {
+				if (rule.mob_id != 0 && rule.mob_id != md->mob_id)
+					continue;
+
+				if (rnd() % 10000 >= rule.rate)
+					continue;
+
+				std::shared_ptr<s_mob_drop> custom_drop = std::make_shared<s_mob_drop>();
+				custom_drop->nameid = rule.item_id;
+				custom_drop->rate = rule.rate;
+				custom_drop->randomopt_group = 0;
+				custom_drop->steal_protected = true;
+
+				std::shared_ptr<s_item_drop> ditem = mob_setdropitem(custom_drop, 1, md->mob_id);
+				mob_item_drop(md, dlist, ditem, 0, rule.rate, homkillonly || merckillonly);
+			}
+		}
+
+		// Process YAML-driven MF_MOBDROP rules
+		std::shared_ptr<s_mapflag_mobdrop_db> yaml_mobdrop;
+
+		if (map[md->m].instance_id > 0)
+			yaml_mobdrop = mapflag_mobdrop_db.find(map[md->m].instance_src_map);
+		else
+			yaml_mobdrop = mapflag_mobdrop_db.find(md->m);
+
+		if (yaml_mobdrop != nullptr) {
+			for (const s_mapflag_mobdrop_rule& rule : yaml_mobdrop->rules) {
+				if (!rule.mob_ids.empty() && std::find(rule.mob_ids.begin(), rule.mob_ids.end(), md->mob_id) == rule.mob_ids.end())
+					continue;
+
+				uint16 final_rate = (rule.rate_min == rule.rate_max ? rule.rate_min : rnd_value(rule.rate_min, rule.rate_max));
+
+				if (!rnd_chance(final_rate, static_cast<uint16>(10000)))
+					continue;
+
+				t_itemid final_item = rule.item_id;
+
+				if (rule.item_group_id > 0) {
+					final_item = mapflag_mobdrop_pick_itemgroup_item(rule.item_group_id);
+
+					if (final_item == 0)
+						continue;
+				}
+
+				std::shared_ptr<s_mob_drop> custom_drop = std::make_shared<s_mob_drop>();
+				custom_drop->nameid = final_item;
+				custom_drop->rate = final_rate;
+				custom_drop->randomopt_group = rule.randomopt_group;
+				custom_drop->steal_protected = true;
+
+				std::shared_ptr<s_item_drop> ditem = mob_setdropitem(custom_drop, 1, md->mob_id);
+				ditem->item_data.bound = rule.bound;
+				mob_item_drop(md, dlist, ditem, 0, final_rate, homkillonly || merckillonly);
 			}
 		}
 
@@ -7102,6 +7184,209 @@ bool MapDropDatabase::parseDrop( const ryml::NodeRef& node, std::unordered_map<u
 	return true;
 }
 
+const std::string MapFlagMobDropDatabase::getDefaultLocation(){
+	return std::string( db_path ) + "/mapflag_mobdrop.yml";
+}
+
+uint64 MapFlagMobDropDatabase::parseBodyNode(const ryml::NodeRef& node){
+	if( !this->nodesExist( node, { "Map", "Rate" } ) ){
+		return 0;
+	}
+
+	std::string mapname;
+
+	if( !this->asString( node, "Map", mapname ) ){
+		return 0;
+	}
+
+	uint16 mapindex = mapindex_name2idx( mapname.c_str(), nullptr );
+
+	if( mapindex == 0 ){
+		this->invalidWarning( node["Map"], "Unknown map \"%s\".\n", mapname.c_str() );
+		return 0;
+	}
+
+	int16 mapid = map_mapindex2mapid( mapindex );
+
+	if( mapid < 0 ){
+		// Silently ignore. Map might be on a different map-server.
+		return 0;
+	}
+
+	std::shared_ptr<s_mapflag_mobdrop_db> mapdrops = this->find( mapid );
+	bool exists = mapdrops != nullptr;
+
+	if( !exists ){
+		mapdrops = std::make_shared<s_mapflag_mobdrop_db>();
+		mapdrops->mapid = mapid;
+	}
+
+	s_mapflag_mobdrop_rule rule = {};
+	rule.item_id = 0;
+	rule.item_group_id = 0;
+	rule.bound = BOUND_NONE;
+	rule.randomopt_group = 0;
+
+	if( this->nodeExists( node, "Monster" ) ){
+		std::string mobname;
+
+		if( !this->asString( node, "Monster", mobname ) ){
+			return 0;
+		}
+
+		if( strcmpi( mobname.c_str(), "all" ) != 0 && mobname != "*" ){
+			std::shared_ptr<s_mob_db> mob = mobdb_search_aegisname( mobname.c_str() );
+
+			if( mob == nullptr ){
+				this->invalidWarning( node["Monster"], "Unknown monster \"%s\".\n", mobname.c_str() );
+				return 0;
+			}
+
+			rule.mob_ids.push_back( mob->id );
+		}
+	}else if( this->nodeExists( node, "Monsters" ) ){
+		for( const ryml::NodeRef& mobNode : node["Monsters"] ){
+			std::string mobname;
+
+			c4::from_chars( mobNode.val(), &mobname );
+
+			if( mobname.empty() ){
+				this->invalidWarning( mobNode, "Monster entry cannot be empty.\n" );
+				return 0;
+			}
+
+			if( strcmpi( mobname.c_str(), "all" ) == 0 || mobname == "*" ){
+				rule.mob_ids.clear();
+				break;
+			}
+
+			std::shared_ptr<s_mob_db> mob = mobdb_search_aegisname( mobname.c_str() );
+
+			if( mob == nullptr ){
+				this->invalidWarning( mobNode, "Unknown monster \"%s\".\n", mobname.c_str() );
+				return 0;
+			}
+
+			if( std::find( rule.mob_ids.begin(), rule.mob_ids.end(), mob->id ) == rule.mob_ids.end() ){
+				rule.mob_ids.push_back( mob->id );
+			}
+		}
+	}
+
+	if( this->nodeExists( node, "Item" ) ){
+		std::string itemname;
+
+		if( !this->asString( node, "Item", itemname ) ){
+			return 0;
+		}
+
+		std::shared_ptr<item_data> item = item_db.search_aegisname( itemname.c_str() );
+
+		if( item == nullptr ){
+			this->invalidWarning( node["Item"], "Unknown item \"%s\".\n", itemname.c_str() );
+			return 0;
+		}
+
+		rule.item_id = item->nameid;
+	}
+
+	if( this->nodeExists( node, "ItemGroup" ) ){
+		std::string group_name;
+
+		if( !this->asString( node, "ItemGroup", group_name ) ){
+			return 0;
+		}
+
+		if( group_name.empty() ){
+			this->invalidWarning( node["ItemGroup"], "ItemGroup cannot be empty.\n" );
+			return 0;
+		}
+
+		if( ISDIGIT( group_name[0] ) ){
+			rule.item_group_id = static_cast<uint16>( std::stoul( group_name ) );
+		}else{
+			int64 group_constant;
+
+			if( !script_get_constant( group_name.c_str(), &group_constant ) ){
+				this->invalidWarning( node["ItemGroup"], "Unknown item group constant \"%s\".\n", group_name.c_str() );
+				return 0;
+			}
+
+			rule.item_group_id = static_cast<uint16>( group_constant );
+		}
+	}
+
+	if( ( rule.item_id == 0 && rule.item_group_id == 0 ) || ( rule.item_id != 0 && rule.item_group_id != 0 ) ){
+		this->invalidWarning( node, "Specify exactly one of Item or ItemGroup.\n" );
+		return 0;
+	}
+
+	if( rule.item_group_id > 0 && itemdb_group.find( rule.item_group_id ) == nullptr ){
+		this->invalidWarning( node["ItemGroup"], "Unknown ItemGroup id %hu.\n", rule.item_group_id );
+		return 0;
+	}
+
+	const ryml::NodeRef& rateNode = node["Rate"];
+
+	if( !this->asUInt16Rate( rateNode, "Min", rule.rate_min ) ){
+		return 0;
+	}
+
+	if( this->nodeExists( rateNode, "Max" ) ){
+		if( !this->asUInt16Rate( rateNode, "Max", rule.rate_max ) ){
+			return 0;
+		}
+	}else{
+		rule.rate_max = rule.rate_min;
+	}
+
+	if( rule.rate_max < rule.rate_min ){
+		this->invalidWarning( node["Rate"], "Rate.Max (%hu) must be >= Rate.Min (%hu).\n", rule.rate_max, rule.rate_min );
+		return 0;
+	}
+
+	if( this->nodeExists( node, "Bind" ) ){
+		std::string bind;
+
+		if( !this->asString( node, "Bind", bind ) ){
+			return 0;
+		}
+
+		if( bind == "Account" || bind == "account" || bind == "account_bound" || bind == "BOUND_ACCOUNT" ){
+			rule.bound = BOUND_ACCOUNT;
+		}else if( bind == "Character" || bind == "character" || bind == "Char" || bind == "char" || bind == "char_bound" || bind == "BOUND_CHAR" ){
+			rule.bound = BOUND_CHAR;
+		}else if( bind == "Free" || bind == "free" || bind == "Trade" || bind == "trade" || bind == "none" || bind == "BOUND_NONE" ){
+			rule.bound = BOUND_NONE;
+		}else{
+			this->invalidWarning( node["Bind"], "Invalid Bind value \"%s\". Use Free/Trade/None, Account or Character.\n", bind.c_str() );
+			return 0;
+		}
+	}
+
+	if( this->nodeExists( node, "RandomOptionGroup" ) ){
+		std::string group_name;
+
+		if( !this->asString( node, "RandomOptionGroup", group_name ) ){
+			return 0;
+		}
+
+		if( !random_option_group.option_get_id( group_name, rule.randomopt_group ) ){
+			this->invalidWarning( node["RandomOptionGroup"], "Unknown random option group \"%s\".\n", group_name.c_str() );
+			return 0;
+		}
+	}
+
+	mapdrops->rules.push_back( rule );
+
+	if( !exists ){
+		this->put( mapid, mapdrops );
+	}
+
+	return 1;
+}
+
+
 /**
  * Copy skill from DB to monster
  * @param mob Monster DB entry
@@ -7214,6 +7499,7 @@ static void mob_load(void)
 	mob_avail_db.load();
 	mob_summon_db.load();
 	map_drop_db.load();
+	mapflag_mobdrop_db.load();
 
 	mob_drop_ratio_adjust();
 	mob_skill_db_set();
@@ -7336,6 +7622,11 @@ void mob_reload(void) {
 	map_foreachnpc(mob_reload_sub_npc);
 }
 
+void mapflag_mobdrop_reload(){
+	mapflag_mobdrop_db.clear();
+	mapflag_mobdrop_db.load();
+}
+
 /**
  * Clear spawn data for all monsters
  */
@@ -7374,6 +7665,7 @@ void do_final_mob(bool is_reload){
 	mob_item_drop_ratio.clear();
 	mob_summon_db.clear();
 	map_drop_db.clear();
+	mapflag_mobdrop_db.clear();
 	if( !is_reload ) {
 		mob_delayed_drops.clear();
 	}

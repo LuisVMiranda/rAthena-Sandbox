@@ -311,6 +311,32 @@ struct s_map_drops{
 	std::unordered_map<uint16, std::unordered_map<uint16, std::shared_ptr<s_mob_drop>>> specific;
 };
 
+
+struct s_mapflag_mobdrop_rule {
+	std::vector<uint16> mob_ids; // empty = any monster
+	t_itemid item_id; // 0 when using item_group_id
+	uint16 item_group_id; // 0 when using item_id
+	uint16 rate_min;
+	uint16 rate_max;
+	bound_type bound;
+	uint16 randomopt_group;
+};
+
+struct s_mapflag_mobdrop_db {
+	uint16 mapid;
+	std::vector<s_mapflag_mobdrop_rule> rules;
+};
+
+class MapFlagMobDropDatabase : public TypesafeYamlDatabase<uint16, s_mapflag_mobdrop_db> {
+public:
+	MapFlagMobDropDatabase() : TypesafeYamlDatabase("MAPFLAG_MOBDROP_DB", 1) {
+
+	}
+
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+};
+
 class MapDropDatabase : public TypesafeYamlDatabase<uint16, s_map_drops>{
 public:
 	MapDropDatabase() : TypesafeYamlDatabase( "MAP_DROP_DB", 2 ){
@@ -325,6 +351,8 @@ private:
 };
 
 extern MapDropDatabase map_drop_db;
+extern MapFlagMobDropDatabase mapflag_mobdrop_db;
+void mapflag_mobdrop_reload();
 extern std::unordered_map<uint16, std::vector<spawn_info>> mob_spawn_data;
 
 struct s_dmglog{
