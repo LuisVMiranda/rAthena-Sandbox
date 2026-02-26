@@ -759,6 +759,22 @@ struct Battle_Config
 	int32 feature_dynamicnpc_rangex;
 	int32 feature_dynamicnpc_rangey;
 	int32 feature_dynamicnpc_direction;
+	int32 feature_campfire_nonvip_duration;
+	int32 feature_campfire_vip_duration;
+	int32 feature_campfire_tick_interval;
+	int32 feature_campfire_range;
+	int32 feature_campfire_hp_percent;
+	int32 feature_campfire_sp_percent;
+	int32 feature_campfire_heal_mode;
+	int32 feature_campfire_hp_heal_mode;
+	int32 feature_campfire_sp_heal_mode;
+	int32 feature_campfire_hp_fixed;
+	int32 feature_campfire_sp_fixed;
+	int32 feature_campfire_trigger_item_id;
+	int32 feature_campfire_cooldown;
+	int32 feature_campfire_icon;
+	int32 feature_campfire_ground_effect;
+	int32 feature_campfire_language;
 	int32 feature_no_mercy_recover_rate;
 
 	int32 mob_respawn_time;

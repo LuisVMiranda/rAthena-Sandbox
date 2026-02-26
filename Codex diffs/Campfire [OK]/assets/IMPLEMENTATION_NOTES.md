@@ -1,7 +1,7 @@
 # Implementation notes
 
 ## Runtime model
-- `pc_useitem()` intercepts `nameid == 7035` and calls `npc_campfire_use_item()`.
+- `pc_useitem()` checks `feature.campfire_trigger_item_id` and calls `npc_campfire_use_item()`.
 - A hidden template NPC (`CAMPFIRE_TEMPLATE`) is duplicated at runtime with visual class `10252`.
 - Active campfires are tracked by NPC ID and owner char ID.
 - Two timers are used:
@@ -22,15 +22,21 @@
 ## Potential operational risks
 - If `npc/custom/campfire_system.txt` is not loaded, item use fails safely and logs a warning.
 - Hardcoded values (range, interval, heal percent) may need balancing per server.
-- Uses direct item ID hook (`7035`), so custom item remaps should be adjusted in source.
+- Trigger item is configurable via `feature.campfire_trigger_item_id` (default `7035`).
 
 ## Configurability (battle_config)
 - `feature.campfire_nonvip_duration` (seconds)
 - `feature.campfire_vip_duration` (seconds)
-- `feature.campfire_tick_interval` (seconds)
-- `feature.campfire_range` (cells)
+- `feature.campfire_tick_interval` (seconds, default 5)
+- `feature.campfire_range` (cells, default 8)
 - `feature.campfire_hp_percent`
 - `feature.campfire_sp_percent`
+- `feature.campfire_heal_mode` (`0`=percent, `1`=fixed, legacy fallback)
+- `feature.campfire_hp_heal_mode` (`-1`=legacy fallback, `0`=percent, `1`=fixed)
+- `feature.campfire_sp_heal_mode` (`-1`=legacy fallback, `0`=percent, `1`=fixed)
+- `feature.campfire_hp_fixed` (default 150)
+- `feature.campfire_sp_fixed` (default 5)
+- `feature.campfire_trigger_item_id`
 - `feature.campfire_cooldown` (seconds)
 - `feature.campfire_icon` (status icon id, `0` disables icon)
 
@@ -41,6 +47,7 @@
 
 ## UI and progress
 - Icon is shown to healed targets while pulse effect is active.
+- Campfire enter notification is shown via `showscript` above the character, including owner name and remaining lifetime.
 - Campfire countdown (final 5 seconds) is shown through `showscript` from source timers to avoid movement lock from progressbar-style blocking.
 
 ## Tick/Heal split model
@@ -56,7 +63,7 @@
 - Effect id is configurable via `feature.campfire_ground_effect`.
 
 ## Localization
-- Source checks battle config `feature.campfire_language` (`1` EN, `2` PT, `3` ES).
+- Source checks battle config `feature.campfire_language` (`1` EN, `2` PT, `3` ES; default 2/PT).
 - Optional per-character override via global variable `CAMPFIRE_LANG`.
 - Applied to zone enter/leave and final countdown text.
 
@@ -65,10 +72,15 @@
 
 
 ## Message source
-- Runtime texts are loaded via `msg_txt()` ids in `conf/msg_conf/map_msg.conf` (ids `2901..2926`).
+- Runtime texts are loaded via `msg_txt()` ids in `conf/msg_conf/map_msg.conf` (ids `1541..1549`).
 - Helper function: `npc_campfire_localized()` in `src/map/npc.cpp`.
+- Keep campfire message IDs **below `MAP_MAX_MSG`** (default map-server cap is `1550` in `src/map/map.cpp`). If higher IDs are needed, raise `MAP_MAX_MSG` via `src/custom/defines_pre.hpp` and rebuild.
 
 
 ## Campfire heal bonus
 - New script bonus `bCampfireHeal,<percent>;` modifies campfire healing (positive amplifies, negative reduces).
 - Works from item scripts and random options because it is implemented as a normal `bonus` parameter.
+
+- Ensure `npc/custom/campfire_system.txt` is present and enabled in `npc/scripts_custom.conf`; otherwise no campfire can be spawned from item 7035.
+
+- Healing mode can be configured per stat; `-1` falls back to legacy `feature.campfire_heal_mode`.
