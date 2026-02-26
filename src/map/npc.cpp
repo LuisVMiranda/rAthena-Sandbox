@@ -125,6 +125,7 @@ std::map<enum npce_event, std::vector<struct script_event_s>> script_event;
 
 struct s_campfire_runtime {
 	int32 owner_char_id = 0;
+	std::string owner_name;
 	int32 party_id = 0;
 	t_tick end_tick = 0;
 	int32 tick_tid = INVALID_TIMER;
@@ -139,7 +140,7 @@ static std::map<int32, t_tick> campfire_cooldown_by_owner;
 
 static void npc_campfire_cleanup( int32 npc_id, bool unload_npc );
 static int32 npc_campfire_regen_sub( block_list* bl, va_list ap );
-static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int32 value = 0 );
+static const char* npc_campfire_localized( map_session_data* sd, uint8 key, const char* owner_name = nullptr, int32 value = 0 );
 
 // Static functions
 static npc_data* npc_create_npc( int16 m, int16 x, int16 y );
@@ -5920,8 +5921,8 @@ npc_data* npc_duplicate_npc( npc_data& nd, char name[NPC_NAME_LENGTH + 1], int16
 	return dnd;
 }
 
-static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int32 value ){
-	static char buffer[96];
+static const char* npc_campfire_localized( map_session_data* sd, uint8 key, const char* owner_name, int32 value ){
+	static char buffer[256];
 	int32 lang = battle_config.feature_campfire_language;
 	if( sd != nullptr ){
 		int32 char_lang = pc_readglobalreg( sd, add_str("CAMPFIRE_LANG") );
@@ -5937,10 +5938,16 @@ static const char* npc_campfire_localized( map_session_data* sd, uint8 key, int3
 		default: return "";
 	}
 
+	if( key == 0 ){
+		safesnprintf( buffer, sizeof(buffer), msg_txt( sd, msg_id ), owner_name != nullptr ? owner_name : "", value );
+		return buffer;
+	}
+
 	if( key == 2 ){
 		safesnprintf( buffer, sizeof(buffer), msg_txt( sd, msg_id ), value );
 		return buffer;
 	}
+
 	return msg_txt( sd, msg_id );
 }
 
@@ -5988,6 +5995,7 @@ bool npc_campfire_use_item( map_session_data& sd ){
 
 	s_campfire_runtime runtime = {};
 	runtime.owner_char_id = sd.status.char_id;
+	runtime.owner_name = sd.status.name;
 	runtime.party_id = sd.status.party_id;
 	runtime.end_tick = now + duration_sec * 1000;
 	runtime.next_heal_tick = now;
@@ -6023,7 +6031,8 @@ static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
 	in_range_chars->insert( tsd->status.char_id );
 	if( !it->second.zone_state_by_char[tsd->status.char_id] ){
 		it->second.zone_state_by_char[tsd->status.char_id] = true;
-		clif_displaymessage( tsd->fd, npc_campfire_localized( tsd, 0 ) );
+		const int32 secs_left = static_cast<int32>( std::max<t_tick>( 1, ( DIFF_TICK( it->second.end_tick, gettick() ) + 999 ) / 1000 ) );
+		clif_showscript( tsd, npc_campfire_localized( tsd, 0, it->second.owner_name.c_str(), secs_left ), SELF );
 		if( battle_config.feature_campfire_icon > 0 )
 			clif_status_change( tsd, battle_config.feature_campfire_icon, 1, INFINITE_TICK, 0, 0, 0 );
 	}
@@ -6123,7 +6132,7 @@ TIMER_FUNC(npc_campfire_tick_timer){
 		for( int32 char_id : in_range_chars ){
 			map_session_data* tsd = map_charid2sd( char_id );
 			if( tsd != nullptr )
-				clif_showscript( tsd, npc_campfire_localized( tsd, 2, secs ), SELF );
+				clif_showscript( tsd, npc_campfire_localized( tsd, 2, nullptr, secs ), SELF );
 		}
 	}
 	if( remain > 1000 )

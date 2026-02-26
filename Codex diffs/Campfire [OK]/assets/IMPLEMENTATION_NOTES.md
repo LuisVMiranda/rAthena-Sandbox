@@ -27,15 +27,15 @@
 ## Configurability (battle_config)
 - `feature.campfire_nonvip_duration` (seconds)
 - `feature.campfire_vip_duration` (seconds)
-- `feature.campfire_tick_interval` (seconds)
-- `feature.campfire_range` (cells)
+- `feature.campfire_tick_interval` (seconds, default 5)
+- `feature.campfire_range` (cells, default 8)
 - `feature.campfire_hp_percent`
 - `feature.campfire_sp_percent`
 - `feature.campfire_heal_mode` (`0`=percent, `1`=fixed, legacy fallback)
 - `feature.campfire_hp_heal_mode` (`-1`=legacy fallback, `0`=percent, `1`=fixed)
 - `feature.campfire_sp_heal_mode` (`-1`=legacy fallback, `0`=percent, `1`=fixed)
-- `feature.campfire_hp_fixed`
-- `feature.campfire_sp_fixed`
+- `feature.campfire_hp_fixed` (default 150)
+- `feature.campfire_sp_fixed` (default 5)
 - `feature.campfire_trigger_item_id`
 - `feature.campfire_cooldown` (seconds)
 - `feature.campfire_icon` (status icon id, `0` disables icon)
@@ -47,6 +47,7 @@
 
 ## UI and progress
 - Icon is shown to healed targets while pulse effect is active.
+- Campfire enter notification is shown via `showscript` above the character, including owner name and remaining lifetime.
 - Campfire countdown (final 5 seconds) is shown through `showscript` from source timers to avoid movement lock from progressbar-style blocking.
 
 ## Tick/Heal split model
@@ -62,7 +63,7 @@
 - Effect id is configurable via `feature.campfire_ground_effect`.
 
 ## Localization
-- Source checks battle config `feature.campfire_language` (`1` EN, `2` PT, `3` ES).
+- Source checks battle config `feature.campfire_language` (`1` EN, `2` PT, `3` ES; default 2/PT).
 - Optional per-character override via global variable `CAMPFIRE_LANG`.
 - Applied to zone enter/leave and final countdown text.
 
