@@ -9,12 +9,12 @@ Header:
 
 Body:
   # Single monster + fixed rate
-  # - Map: geffen
-  #   Monster: Poring
-  #   Item: Red_Potion
-  #   Rate:
-  #     Min: 100
-  #   Bind: Free
+  - Map: all
+    Monster: Poring
+    ItemGroup: IG_ORE
+    Rate:
+      Min: 5000
+    Bind: Free
 
   # Multiple monsters + dynamic rate + account bound
   # - Map: geffen
