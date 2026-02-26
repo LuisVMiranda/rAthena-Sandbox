@@ -5960,7 +5960,7 @@ static void npc_campfire_build_name( map_session_data& sd, char (&campfire_name)
 		return;
 
 	const char* configured_name = msg_txt( &sd, battle_config.feature_campfire_npc_name_msg );
-	if( configured_name == nullptr || *configured_name == '\0' )
+	if( configured_name == nullptr || *configured_name == '\0' || strcmp( configured_name, "??" ) == 0 )
 		return;
 
 	std::string dynamic_name = configured_name;
