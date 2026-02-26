@@ -6479,7 +6479,7 @@ int32 pc_useitem(map_session_data *sd,int32 n)
 	// Store information for later use before it is lost (via pc_delitem) [Paradox924X]
 	nameid = id->nameid;
 
-	if( nameid == 7035 && !npc_campfire_use_item( *sd ) )
+	if( nameid == battle_config.feature_campfire_trigger_item_id && !npc_campfire_use_item( *sd ) )
 		return 0;
 
 	if (nameid != ITEMID_NAUTHIZ && sd->sc.opt1 > 0 && sd->sc.opt1 != OPT1_STONEWAIT && sd->sc.opt1 != OPT1_BURNING)

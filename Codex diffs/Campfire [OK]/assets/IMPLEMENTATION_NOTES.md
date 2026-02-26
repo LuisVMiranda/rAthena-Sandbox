@@ -1,7 +1,7 @@
 # Implementation notes
 
 ## Runtime model
-- `pc_useitem()` intercepts `nameid == 7035` and calls `npc_campfire_use_item()`.
+- `pc_useitem()` checks `feature.campfire_trigger_item_id` and calls `npc_campfire_use_item()`.
 - A hidden template NPC (`CAMPFIRE_TEMPLATE`) is duplicated at runtime with visual class `10252`.
 - Active campfires are tracked by NPC ID and owner char ID.
 - Two timers are used:
@@ -22,7 +22,7 @@
 ## Potential operational risks
 - If `npc/custom/campfire_system.txt` is not loaded, item use fails safely and logs a warning.
 - Hardcoded values (range, interval, heal percent) may need balancing per server.
-- Uses direct item ID hook (`7035`), so custom item remaps should be adjusted in source.
+- Trigger item is configurable via `feature.campfire_trigger_item_id` (default `7035`).
 
 ## Configurability (battle_config)
 - `feature.campfire_nonvip_duration` (seconds)
@@ -31,6 +31,12 @@
 - `feature.campfire_range` (cells)
 - `feature.campfire_hp_percent`
 - `feature.campfire_sp_percent`
+- `feature.campfire_heal_mode` (`0`=percent, `1`=fixed, legacy fallback)
+- `feature.campfire_hp_heal_mode` (`-1`=legacy fallback, `0`=percent, `1`=fixed)
+- `feature.campfire_sp_heal_mode` (`-1`=legacy fallback, `0`=percent, `1`=fixed)
+- `feature.campfire_hp_fixed`
+- `feature.campfire_sp_fixed`
+- `feature.campfire_trigger_item_id`
 - `feature.campfire_cooldown` (seconds)
 - `feature.campfire_icon` (status icon id, `0` disables icon)
 
@@ -75,3 +81,5 @@
 - Works from item scripts and random options because it is implemented as a normal `bonus` parameter.
 
 - Ensure `npc/custom/campfire_system.txt` is present and enabled in `npc/scripts_custom.conf`; otherwise no campfire can be spawned from item 7035.
+
+- Healing mode can be configured per stat; `-1` falls back to legacy `feature.campfire_heal_mode`.

@@ -6029,8 +6029,20 @@ static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
 	}
 
 	if( do_heal ){
-		const int32 hp_gain = std::max<int32>( 1, status_get_max_hp( tsd ) * battle_config.feature_campfire_hp_percent / 100 );
-		const int32 sp_gain = std::max<int32>( 1, status_get_max_sp( tsd ) * battle_config.feature_campfire_sp_percent / 100 );
+		int32 hp_heal_mode = battle_config.feature_campfire_hp_heal_mode;
+		int32 sp_heal_mode = battle_config.feature_campfire_sp_heal_mode;
+		if( hp_heal_mode < 0 )
+			hp_heal_mode = battle_config.feature_campfire_heal_mode;
+		if( sp_heal_mode < 0 )
+			sp_heal_mode = battle_config.feature_campfire_heal_mode;
+
+		const int32 hp_gain = hp_heal_mode == 1
+			? std::max<int32>( 1, battle_config.feature_campfire_hp_fixed )
+			: std::max<int32>( 1, status_get_max_hp( tsd ) * battle_config.feature_campfire_hp_percent / 100 );
+		const int32 sp_gain = sp_heal_mode == 1
+			? std::max<int32>( 1, battle_config.feature_campfire_sp_fixed )
+			: std::max<int32>( 1, status_get_max_sp( tsd ) * battle_config.feature_campfire_sp_percent / 100 );
+
 		status_heal( tsd, hp_gain, sp_gain, 3 );
 		if( battle_config.feature_campfire_ground_effect > 0 )
 			clif_specialeffect( tsd, battle_config.feature_campfire_ground_effect, SELF );
