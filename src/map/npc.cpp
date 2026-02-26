@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <set>
 #include <vector>
@@ -5964,7 +5965,7 @@ static void npc_campfire_build_name( map_session_data& sd, char (&campfire_name)
 
 	std::string dynamic_name = configured_name;
 	const std::string token = "{player}";
-	for( size_t pos = 0; ( pos = dynamic_name.find( token, pos ) ) != std::string::npos; pos += sd.status.name.size() )
+	for( size_t pos = 0; ( pos = dynamic_name.find( token, pos ) ) != std::string::npos; pos += strlen( sd.status.name ) )
 		dynamic_name.replace( pos, token.size(), sd.status.name );
 
 	safestrncpy( campfire_name, dynamic_name.c_str(), sizeof(campfire_name) );
