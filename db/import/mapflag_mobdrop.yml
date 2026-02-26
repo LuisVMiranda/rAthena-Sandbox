@@ -1,37 +1,25 @@
 # ============================================================
 # mapflag_mobdrop custom production overrides
 # ============================================================
-# Add live-server entries here.
+# - Map: geffen   (Use 'all' or '*' to apply it globally)
+#   Monsters:   (Use 'all' or '*' to apply it globally)
+#     - Poring   (Monster 1)
+#     - Drops   (Monster 2) ...
+#   Item: Apple   (Individual items)
+#   ItemGroup: IG_ORE   (Pulling items from a group)
+#   Rate:
+#     Min: 100  (Use only Min for fixed rate)
+#     Max: 250  (1 = 0.01% / 10000 = 100%)
+#   Bind: Free  (Use 'Free', 'Character', or 'Account' to bind the item)
 
 Header:
   Type: MAPFLAG_MOBDROP_DB
   Version: 1
 
 Body:
-  # Single monster + fixed rate
   - Map: all
-    Monster: Poring
+    Monster: all
     ItemGroup: IG_ORE
     Rate:
       Min: 5000
     Bind: Free
-
-  # Multiple monsters + dynamic rate + account bound
-  # - Map: geffen
-  #   Monsters:
-  #     - Poring
-  #     - Drops
-  #   Item: Apple
-  #   Rate:
-  #     Min: 100
-  #     Max: 250
-  #   Bind: Account
-
-  # ItemGroup random pool usage
-  # - Map: payon
-  #   Monster: Poporing
-  #   ItemGroup: IG_ORE
-  #   Rate:
-  #     Min: 50
-  #     Max: 150
-  #   Bind: Character
