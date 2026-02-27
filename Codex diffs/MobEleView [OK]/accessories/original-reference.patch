@@ -81,3 +81,13 @@ index 103a6fa..6f3f818 100644
  				if (ud != nullptr) {
  					memcpy(packet.title, ud->title, NAME_LENGTH);
  					packet.groupId = ud->group_id;
+
+diff --git a/src/map/unit.hpp b/src/map/unit.hpp
+--- a/src/map/unit.hpp
++++ b/src/map/unit.hpp
+@@
+ 	char walk_done_event[EVENT_NAME_LENGTH];
+ 	char title[NAME_LENGTH];
++	char secondary_name[NAME_LENGTH];
+ 	int32 group_id;
+

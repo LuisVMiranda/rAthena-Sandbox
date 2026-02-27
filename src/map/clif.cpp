@@ -9954,6 +9954,24 @@ static const char* clif_mob_size_tag( e_size size ){
 	}
 }
 
+static void clif_mob_ele_view_sync_lines( const mob_data& md, unit_data* ud ){
+	if( ud == nullptr ){
+		return;
+	}
+
+	char title_line[NAME_LENGTH] = {};
+	safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md.name, get_percentage( md.status.hp, md.status.max_hp ) );
+	safestrncpy( ud->title, title_line, NAME_LENGTH );
+
+	char name_line[NAME_LENGTH] = {};
+	safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md.status.race ) ), clif_mob_size_tag( static_cast<e_size>( md.status.size ) ) );
+	safestrncpy( ud->secondary_name, name_line, NAME_LENGTH );
+
+	if( md.status.def_ele >= ELE_NEUTRAL && md.status.def_ele < ELE_MAX ) {
+		ud->group_id = 51 + md.status.def_ele;
+	}
+}
+
 void clif_name( const block_list* src, const block_list* bl, send_target target ){
 	nullpo_retv( src );
 	nullpo_retv( bl );
@@ -10103,22 +10121,23 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 				const unit_data* ud = unit_bl2ud(bl);
 
 				if( battle_config.mob_ele_view ){
-					char title_line[NAME_LENGTH] = {};
-					safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md->name, get_percentage( md->status.hp, md->status.max_hp ) );
-					safestrncpy( packet.title, title_line, NAME_LENGTH );
-
-					char name_line[NAME_LENGTH] = {};
-					safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md->status.race ) ), clif_mob_size_tag( static_cast<e_size>( md->status.size ) ) );
-					safestrncpy( packet.name, name_line, NAME_LENGTH );
-
 					if( ud != nullptr ) {
-						safestrncpy( const_cast<unit_data*>(ud)->title, title_line, NAME_LENGTH );
-						if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
-							const_cast<unit_data*>(ud)->group_id = 51 + md->status.def_ele;
-					}
+						clif_mob_ele_view_sync_lines( *md, const_cast<unit_data*>(ud) );
+						safestrncpy( packet.title, ud->title, NAME_LENGTH );
+						safestrncpy( packet.name, ud->secondary_name, NAME_LENGTH );
+						packet.groupId = ud->group_id;
+					}else{
+						char title_line[NAME_LENGTH] = {};
+						safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md->name, get_percentage( md->status.hp, md->status.max_hp ) );
+						safestrncpy( packet.title, title_line, NAME_LENGTH );
 
-					if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
-						packet.groupId = 51 + md->status.def_ele;
+						char name_line[NAME_LENGTH] = {};
+						safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md->status.race ) ), clif_mob_size_tag( static_cast<e_size>( md->status.size ) ) );
+						safestrncpy( packet.name, name_line, NAME_LENGTH );
+
+						if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
+							packet.groupId = 51 + md->status.def_ele;
+					}
 				}else if (ud != nullptr) {
 					memcpy(packet.title, ud->title, NAME_LENGTH);
 					packet.groupId = ud->group_id;

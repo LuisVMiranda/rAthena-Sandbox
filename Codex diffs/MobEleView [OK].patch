@@ -21,4 +21,13 @@ index 9adba65..26a8ed5 100644
 +
  				if (md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX)
  					packet.groupId = 51 + md->status.def_ele;
- 
+
+diff --git a/src/map/unit.hpp b/src/map/unit.hpp
+--- a/src/map/unit.hpp
++++ b/src/map/unit.hpp
+@@
+ 	char walk_done_event[EVENT_NAME_LENGTH];
+ 	char title[NAME_LENGTH];
++	char secondary_name[NAME_LENGTH];
+ 	int32 group_id;
+
