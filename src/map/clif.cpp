@@ -9929,6 +9929,31 @@ void clif_refresh(map_session_data *sd)
 /// 0095 <id>.L <char name>.24B (ZC_ACK_REQNAME)
 /// 0195 <id>.L <char name>.24B <party name>.24B <guild name>.24B <position name>.24B (ZC_ACK_REQNAMEALL)
 /// 0a30 <id>.L <char name>.24B <party name>.24B <guild name>.24B <position name>.24B <title ID>.L (ZC_ACK_REQNAMEALL2)
+static const char* clif_mob_race_name( e_race race ){
+	switch( race ){
+		case RC_FORMLESS: return "Formless";
+		case RC_UNDEAD: return "Undead";
+		case RC_BRUTE: return "Brute";
+		case RC_PLANT: return "Plant";
+		case RC_INSECT: return "Insect";
+		case RC_FISH: return "Fish";
+		case RC_DEMON: return "Demon";
+		case RC_DEMIHUMAN: return "Demihuman";
+		case RC_ANGEL: return "Angel";
+		case RC_DRAGON: return "Dragon";
+		default: return "";
+	}
+}
+
+static const char* clif_mob_size_tag( e_size size ){
+	switch( size ){
+		case SZ_SMALL: return "[S]";
+		case SZ_MEDIUM: return "[M]";
+		case SZ_BIG: return "[L]";
+		default: return "";
+	}
+}
+
 void clif_name( const block_list* src, const block_list* bl, send_target target ){
 	nullpo_retv( src );
 	nullpo_retv( bl );
@@ -10077,7 +10102,24 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 #if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
 				const unit_data* ud = unit_bl2ud(bl);
 
-				if (ud != nullptr) {
+				if( battle_config.mob_ele_view ){
+					char title_line[NAME_LENGTH] = {};
+					safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md->name, get_percentage( md->status.hp, md->status.max_hp ) );
+					safestrncpy( packet.title, title_line, NAME_LENGTH );
+
+					char name_line[NAME_LENGTH] = {};
+					safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md->status.race ) ), clif_mob_size_tag( static_cast<e_size>( md->status.size ) ) );
+					safestrncpy( packet.name, name_line, NAME_LENGTH );
+
+					if( ud != nullptr ) {
+						safestrncpy( const_cast<unit_data*>(ud)->title, title_line, NAME_LENGTH );
+						if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
+							const_cast<unit_data*>(ud)->group_id = 51 + md->status.def_ele;
+					}
+
+					if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
+						packet.groupId = 51 + md->status.def_ele;
+				}else if (ud != nullptr) {
 					memcpy(packet.title, ud->title, NAME_LENGTH);
 					packet.groupId = ud->group_id;
 				}
