@@ -85,6 +85,57 @@ unsigned long color_table[COLOR_MAX];
 static bool clif_session_isValid( const map_session_data* sd );
 static void clif_loadConfirm( map_session_data *sd );
 static void clif_favorite_item( map_session_data& sd, uint16 index );
+static void clif_mob_ele_view_sync_lines( const mob_data& md, unit_data* ud );
+
+static bool clif_mob_ele_view_embedded_name( const block_list* bl, char* out, size_t out_len ){
+	if( out_len == 0 ){
+		return false;
+	}
+
+	out[0] = '\0';
+
+	if( !battle_config.mob_ele_view || bl == nullptr || bl->type != BL_MOB ){
+		return false;
+	}
+
+	const mob_data* md = static_cast<const mob_data*>( bl );
+	const unit_data* ud = unit_bl2ud( bl );
+
+	if( ud != nullptr ){
+		clif_mob_ele_view_sync_lines( *md, const_cast<unit_data*>(ud) );
+
+		if( ud->secondary_name[0] != '\0' ){
+			safestrncpy( out, ud->secondary_name, out_len );
+			return true;
+		}
+	}
+
+	const char* race_name = "";
+	switch( md->status.race ){
+		case RC_FORMLESS: race_name = "Formless"; break;
+		case RC_UNDEAD: race_name = "Undead"; break;
+		case RC_BRUTE: race_name = "Brute"; break;
+		case RC_PLANT: race_name = "Plant"; break;
+		case RC_INSECT: race_name = "Insect"; break;
+		case RC_FISH: race_name = "Fish"; break;
+		case RC_DEMON: race_name = "Demon"; break;
+		case RC_DEMIHUMAN: race_name = "Demihuman"; break;
+		case RC_ANGEL: race_name = "Angel"; break;
+		case RC_DRAGON: race_name = "Dragon"; break;
+		default: break;
+	}
+
+	const char* size_name = "";
+	switch( md->status.size ){
+		case SZ_SMALL: size_name = "[S]"; break;
+		case SZ_MEDIUM: size_name = "[M]"; break;
+		case SZ_BIG: size_name = "[L]"; break;
+		default: break;
+	}
+
+	safesnprintf( out, out_len, "%s %s", race_name, size_name );
+	return true;
+}
 
 #if PACKETVER >= 20150513
 enum mail_type {
@@ -1192,7 +1243,11 @@ static void clif_set_unit_idle( const block_list* bl, bool walking, send_target 
 #endif
 /* Might be earlier, this is when the named item bug began */
 #if PACKETVER >= 20131223
-	safestrncpy(p.name, status_get_name( *bl ), NAME_LENGTH);
+	char embedded_name[NAME_LENGTH] = {};
+	if( !clif_mob_ele_view_embedded_name( bl, embedded_name, sizeof( embedded_name ) ) ){
+		safestrncpy( embedded_name, status_get_name( *bl ), sizeof( embedded_name ) );
+	}
+	safestrncpy( p.name, embedded_name, NAME_LENGTH );
 #endif
 
 	clif_send( &p, sizeof( p ), tbl, target );
@@ -1339,7 +1394,11 @@ static void clif_spawn_unit( const block_list* bl, enum send_target target ){
 #endif
 /* Might be earlier, this is when the named item bug began */
 #if PACKETVER >= 20131223
-	safestrncpy( p.name, status_get_name( *bl ), NAME_LENGTH );
+	char embedded_name[NAME_LENGTH] = {};
+	if( !clif_mob_ele_view_embedded_name( bl, embedded_name, sizeof( embedded_name ) ) ){
+		safestrncpy( embedded_name, status_get_name( *bl ), sizeof( embedded_name ) );
+	}
+	safestrncpy( p.name, embedded_name, NAME_LENGTH );
 #endif
 
 	if( disguised( bl ) ){
@@ -1447,7 +1506,11 @@ static void clif_set_unit_walking( const block_list& bl, const map_session_data*
 #endif
 /* Might be earlier, this is when the named item bug began */
 #if PACKETVER >= 20131223
-	safestrncpy(p.name, status_get_name( bl ), NAME_LENGTH);
+	char embedded_name[NAME_LENGTH] = {};
+	if( !clif_mob_ele_view_embedded_name( &bl, embedded_name, sizeof( embedded_name ) ) ){
+		safestrncpy( embedded_name, status_get_name( bl ), sizeof( embedded_name ) );
+	}
+	safestrncpy( p.name, embedded_name, NAME_LENGTH );
 #endif
 
 	clif_send( &p, sizeof(p), tsd ? tsd : &bl, target );
