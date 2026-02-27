@@ -10082,6 +10082,34 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 				safestrncpy( packet.position_name, md->guardian_data->castle->castle_name, NAME_LENGTH );
 
 				clif_send(&packet, sizeof(packet), src, target);
+#if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
+			}else if( battle_config.mob_ele_view ){
+				PACKET_ZC_ACK_REQNAMEALL_NPC packet = { 0 };
+
+				packet.packet_id = HEADER_ZC_ACK_REQNAMEALL_NPC;
+				packet.gid = bl->id;
+				const unit_data* ud = unit_bl2ud(bl);
+
+				if( ud != nullptr ) {
+					clif_mob_ele_view_sync_lines( *md, const_cast<unit_data*>(ud) );
+					safestrncpy( packet.title, ud->title, NAME_LENGTH );
+					safestrncpy( packet.name, ud->secondary_name, NAME_LENGTH );
+					packet.groupId = ud->group_id;
+				}else{
+					char title_line[NAME_LENGTH] = {};
+					safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md->name, get_percentage( md->status.hp, md->status.max_hp ) );
+					safestrncpy( packet.title, title_line, NAME_LENGTH );
+
+					char name_line[NAME_LENGTH] = {};
+					safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md->status.race ) ), clif_mob_size_tag( static_cast<e_size>( md->status.size ) ) );
+					safestrncpy( packet.name, name_line, NAME_LENGTH );
+
+					if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
+						packet.groupId = 51 + md->status.def_ele;
+				}
+
+				clif_send(&packet, sizeof(packet), src, target);
+#endif
 			}else if( battle_config.show_mob_info ){
 				PACKET_ZC_ACK_REQNAMEALL packet = { 0 };
 
