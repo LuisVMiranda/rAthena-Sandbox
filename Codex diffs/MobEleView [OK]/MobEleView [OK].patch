@@ -12,14 +12,23 @@ index 26a8ed5..4be4544 100644
 -
 +				// Client renders title above name for this packet, so keep name+HP in title (line 1).
  				char title_line[NAME_LENGTH] = {};
--				safesnprintf( title_line, sizeof(title_line), "%s %s", get_mob_race_name(md->status.race), get_mob_size_tag(md->status.size) );
+-				safesnprintf( title_line, sizeof(title_line), "%s [%c]", get_mob_race_name(md->status.race), (md->status.size == SZ_SMALL ? 'S' : md->status.size == SZ_MEDIUM ? 'M' : md->status.size == SZ_BIG ? 'L' : '?') );
 +				safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md->name, get_percentage( md->status.hp, md->status.max_hp ) );
  				memcpy( packet.title, title_line, NAME_LENGTH );
  
 +				char name_line[NAME_LENGTH] = {};
-+				safesnprintf( name_line, sizeof(name_line), "%s %s", get_mob_race_name(md->status.race), get_mob_size_tag(md->status.size) );
++				safesnprintf( name_line, sizeof(name_line), "%s [%c]", get_mob_race_name(md->status.race), (md->status.size == SZ_SMALL ? 'S' : md->status.size == SZ_MEDIUM ? 'M' : md->status.size == SZ_BIG ? 'L' : '?') );
 +				safestrncpy( packet.name, name_line, NAME_LENGTH );
 +
  				if (md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX)
  					packet.groupId = 51 + md->status.def_ele;
- 
+
+diff --git a/src/map/unit.hpp b/src/map/unit.hpp
+--- a/src/map/unit.hpp
++++ b/src/map/unit.hpp
+@@
+ 	char walk_done_event[EVENT_NAME_LENGTH];
+ 	char title[NAME_LENGTH];
++	char secondary_name[NAME_LENGTH];
+ 	int32 group_id;
+

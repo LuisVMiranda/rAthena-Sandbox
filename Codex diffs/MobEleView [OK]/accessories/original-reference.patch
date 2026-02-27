@@ -41,7 +41,7 @@ index 103a6fa..6f3f818 100644
 +++ b/src/map/clif.cpp
 @@ -10176,6 +10176,41 @@ void clif_name( struct block_list* src, struct block_list *bl, send_target targe
  #if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
- 				unit_data *ud = unit_bl2ud(bl);
+ 				const unit_data *ud = unit_bl2ud(bl);
  
 +				int ele_group = -1;
 +				char ele_name[8] = {0};
@@ -73,7 +73,7 @@ index 103a6fa..6f3f818 100644
 +						if(strlen(ele_name))
 +						{
 +							safesnprintf(output,sizeof(output),"%s Lv: %d",ele_name,md->status.ele_lv);
-+							safestrncpy(ud->title, output, NAME_LENGTH);
++							safestrncpy(const_cast<unit_data*>(ud)->title, output, NAME_LENGTH);
 +						}
 +					}
 +				}
@@ -81,3 +81,13 @@ index 103a6fa..6f3f818 100644
  				if (ud != nullptr) {
  					memcpy(packet.title, ud->title, NAME_LENGTH);
  					packet.groupId = ud->group_id;
+
+diff --git a/src/map/unit.hpp b/src/map/unit.hpp
+--- a/src/map/unit.hpp
++++ b/src/map/unit.hpp
+@@
+ 	char walk_done_event[EVENT_NAME_LENGTH];
+ 	char title[NAME_LENGTH];
++	char secondary_name[NAME_LENGTH];
+ 	int32 group_id;
+
