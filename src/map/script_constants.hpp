@@ -866,6 +866,8 @@
 	export_constant2("bNonCritAtkRate", SP_NON_CRIT_ATK_RATE);
 	export_constant2("bFriendlyFire", SP_FRIENDLY_FIRE);
 	export_constant2("bMonsterScholar", SP_MONSTER_SCHOLAR);
+	export_constant2("bCampfireRate", SP_CAMPFIRE_HEAL_RATE);
+	export_constant2("bCampfireHeal", SP_CAMPFIRE_HEAL_RATE);
 	export_constant2("bCampfireHealRate", SP_CAMPFIRE_HEAL_RATE);
 
 	/* equip indices */
