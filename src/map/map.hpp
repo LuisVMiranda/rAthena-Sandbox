@@ -705,6 +705,7 @@ enum e_mapflag : int16 {
 	MF_NOCAMPFIRE,
 	MF_NO_MERCY,
 	MF_BLOOD_TAX,
+	MF_GEAR_LOCK,
 	MF_MAX
 };
 

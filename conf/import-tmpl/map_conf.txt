@@ -7,3 +7,5 @@
 import: conf/mapflag/no_mercy.conf
 
 import: conf/mapflag/blood_tax.conf
+
+import: conf/mapflag/gear_lock.conf

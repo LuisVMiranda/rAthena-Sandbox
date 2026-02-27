@@ -12059,6 +12059,16 @@ bool pc_equipitem(map_session_data *sd,int16 n,int32 req_pos,bool equipswitch)
 		}
 		return false;
 	}
+	if( map_getmapflag( sd->m, MF_GEAR_LOCK ) ){
+		if( equipswitch ){
+			clif_equipswitch_add( sd, n, req_pos, ITEM_EQUIP_ACK_FAIL );
+		}else{
+			clif_equipitemack( *sd, ITEM_EQUIP_ACK_FAIL, n );
+		}
+		clif_displaymessage( sd->fd, "A energia deste mapa impede a troca de equipamentos." );
+		return false;
+	}
+
 	if( DIFF_TICK(sd->canequip_tick,gettick()) > 0 ) {
 		if( equipswitch ){
 			clif_equipswitch_add( sd, n, req_pos, ITEM_EQUIP_ACK_FAIL );
@@ -12437,6 +12447,11 @@ bool pc_unequipitem(map_session_data *sd, int32 n, int32 flag) {
 	if (!(pos = sd->inventory.u.items_inventory[n].equip)) {
 		clif_unequipitemack(*sd,n,0,false);
 		return false; //Nothing to unequip
+	}
+	if( map_getmapflag( sd->m, MF_GEAR_LOCK ) && !( flag & 2 ) ){
+		clif_unequipitemack( *sd, n, 0, false );
+		clif_displaymessage( sd->fd, "A energia deste mapa impede a troca de equipamentos." );
+		return false;
 	}
 	// status change that makes player cannot unequip equipment
 	if (!(flag&2) && !sd->sc.empty() &&( sd->sc.cant.unequip ||

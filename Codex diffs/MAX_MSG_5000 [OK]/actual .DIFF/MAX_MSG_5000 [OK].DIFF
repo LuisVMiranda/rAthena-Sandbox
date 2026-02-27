@@ -1,0 +1,13 @@
+diff --git a/src/map/map.cpp b/src/map/map.cpp
+index 57d0ce1..8e00f5a 100644
+--- a/src/map/map.cpp
++++ b/src/map/map.cpp
+@@ -127,7 +127,7 @@ static block_list *bl_list[BL_LIST_MAX];
+ static int32 bl_list_count = 0;
+ 
+ #ifndef MAP_MAX_MSG
+-	#define MAP_MAX_MSG 2500
++	#define MAP_MAX_MSG 5000
+ #endif
+ 
+ struct map_data map[MAX_MAP_PER_SERVER];

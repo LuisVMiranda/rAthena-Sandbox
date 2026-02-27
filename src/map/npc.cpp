@@ -5702,6 +5702,10 @@ static const char* npc_parse_mapflag(char* w1, char* w2, char* w3, char* w4, con
 			map_setmapflag(m, mapflag, state);
 			break;
 
+		case MF_GEAR_LOCK:
+			map_setmapflag(m, mapflag, state);
+			break;
+
 		// All others do not need special treatment
 		default:
 			map_setmapflag(m, mapflag, state);
