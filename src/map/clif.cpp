@@ -10040,7 +10040,7 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 			}
 
 #if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
-			unit_data* ud = unit_bl2ud(bl);
+			const unit_data* ud = unit_bl2ud(bl);
 
 			if (ud != nullptr) {
 				memcpy(packet.title, ud->title, NAME_LENGTH);
@@ -10100,7 +10100,7 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 				safestrncpy(packet.name, md->name, NAME_LENGTH);
 
 #if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
-				unit_data* ud = unit_bl2ud(bl);
+				const unit_data* ud = unit_bl2ud(bl);
 
 				if( battle_config.mob_ele_view ){
 					char title_line[NAME_LENGTH] = {};
@@ -10112,9 +10112,9 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 					safestrncpy( packet.name, name_line, NAME_LENGTH );
 
 					if( ud != nullptr ) {
-						safestrncpy( ud->title, title_line, NAME_LENGTH );
+						safestrncpy( const_cast<unit_data*>(ud)->title, title_line, NAME_LENGTH );
 						if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
-							ud->group_id = 51 + md->status.def_ele;
+							const_cast<unit_data*>(ud)->group_id = 51 + md->status.def_ele;
 					}
 
 					if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
