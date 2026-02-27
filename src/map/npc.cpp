@@ -6117,8 +6117,11 @@ static int32 npc_campfire_regen_sub( block_list* bl, va_list ap ){
 		const int32 sp_gain = sp_heal_mode == 1
 			? std::max<int32>( 1, battle_config.feature_campfire_sp_fixed )
 			: std::max<int32>( 1, status_get_max_sp( tsd ) * battle_config.feature_campfire_sp_percent / 100 );
+		const int32 heal_rate = std::max<int32>( 0, 100 + tsd->bonus.campfire_heal_rate );
+		const int32 adjusted_hp_gain = hp_gain * heal_rate / 100;
+		const int32 adjusted_sp_gain = sp_gain * heal_rate / 100;
 
-		status_heal( tsd, hp_gain, sp_gain, 3 );
+		status_heal( tsd, adjusted_hp_gain, adjusted_sp_gain, 3 );
 		if( battle_config.feature_campfire_ground_effect > 0 )
 			clif_specialeffect( tsd, battle_config.feature_campfire_ground_effect, SELF );
 	}

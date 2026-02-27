@@ -78,7 +78,7 @@
 
 
 ## Campfire heal bonus
-- New script bonus `bCampfireHeal,<percent>;` modifies campfire healing (positive amplifies, negative reduces).
+- New script bonus `bCampfireRate / bCampfireHeal,<percent>;` modifies campfire healing (positive amplifies, negative reduces).
 - Works from item scripts and random options because it is implemented as a normal `bonus` parameter.
 
 - Ensure `npc/custom/campfire_system.txt` is present and enabled in `npc/scripts_custom.conf`; otherwise no campfire can be spawned from item 7035.
