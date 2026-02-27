@@ -63,6 +63,7 @@ struct unit_data {
 	} state;
 	char walk_done_event[EVENT_NAME_LENGTH];
 	char title[NAME_LENGTH];
+	char secondary_name[NAME_LENGTH];
 	int32 group_id;
 
 	std::vector<int32> shadow_scar_timer;

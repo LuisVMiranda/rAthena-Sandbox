@@ -388,6 +388,7 @@ struct Battle_Config
 
 	int32 manner_system; // end additions [Valaris]
 	int32 show_mob_info;
+	int32 mob_ele_view;
 
 	int32 gx_allhit;
 	int32 gx_disptype;

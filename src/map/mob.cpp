@@ -2779,7 +2779,7 @@ void mob_damage(mob_data *md, block_list *src, int32 damage)
 		mob_log_damage(md, src, static_cast<int64>(damage));
 	}
 
-	if (battle_config.show_mob_info&3)
+	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view)
 		clif_name_area(md);
 
 #if PACKETVER >= 20120404
@@ -3764,7 +3764,7 @@ void mob_revive(mob_data *md, uint32 hp)
 	clif_spawn(md);
 	skill_unit_move(md,tick,1);
 	mobskill_use(md, tick, MSC_SPAWN);
-	if (battle_config.show_mob_info&3)
+	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view)
 		clif_name_area(md);
 }
 
@@ -3961,7 +3961,7 @@ int32 mob_class_change (mob_data *md, int32 mob_id)
  *------------------------------------------*/
 void mob_heal(mob_data *md,uint32 heal)
 {
-	if (battle_config.show_mob_info&3)
+	if ((battle_config.show_mob_info&3) || battle_config.mob_ele_view)
 		clif_name_area(md);
 #if PACKETVER >= 20120404
 	if (battle_config.monster_hp_bars_info && !map_getmapflag(md->m, MF_HIDEMOBHPBAR)) {
