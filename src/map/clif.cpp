@@ -85,6 +85,57 @@ unsigned long color_table[COLOR_MAX];
 static bool clif_session_isValid( const map_session_data* sd );
 static void clif_loadConfirm( map_session_data *sd );
 static void clif_favorite_item( map_session_data& sd, uint16 index );
+static void clif_mob_ele_view_sync_lines( const mob_data& md, unit_data* ud );
+
+static bool clif_mob_ele_view_embedded_name( const block_list* bl, char* out, size_t out_len ){
+	if( out_len == 0 ){
+		return false;
+	}
+
+	out[0] = '\0';
+
+	if( !battle_config.mob_ele_view || bl == nullptr || bl->type != BL_MOB ){
+		return false;
+	}
+
+	const mob_data* md = static_cast<const mob_data*>( bl );
+	const unit_data* ud = unit_bl2ud( bl );
+
+	if( ud != nullptr ){
+		clif_mob_ele_view_sync_lines( *md, const_cast<unit_data*>(ud) );
+
+		if( ud->secondary_name[0] != '\0' ){
+			safestrncpy( out, ud->secondary_name, out_len );
+			return true;
+		}
+	}
+
+	const char* race_name = "";
+	switch( md->status.race ){
+		case RC_FORMLESS: race_name = "Formless"; break;
+		case RC_UNDEAD: race_name = "Undead"; break;
+		case RC_BRUTE: race_name = "Brute"; break;
+		case RC_PLANT: race_name = "Plant"; break;
+		case RC_INSECT: race_name = "Insect"; break;
+		case RC_FISH: race_name = "Fish"; break;
+		case RC_DEMON: race_name = "Demon"; break;
+		case RC_DEMIHUMAN: race_name = "Demihuman"; break;
+		case RC_ANGEL: race_name = "Angel"; break;
+		case RC_DRAGON: race_name = "Dragon"; break;
+		default: break;
+	}
+
+	const char* size_name = "";
+	switch( md->status.size ){
+		case SZ_SMALL: size_name = "[S]"; break;
+		case SZ_MEDIUM: size_name = "[M]"; break;
+		case SZ_BIG: size_name = "[L]"; break;
+		default: break;
+	}
+
+	safesnprintf( out, out_len, "%s %s", race_name, size_name );
+	return true;
+}
 
 #if PACKETVER >= 20150513
 enum mail_type {
@@ -1192,7 +1243,11 @@ static void clif_set_unit_idle( const block_list* bl, bool walking, send_target 
 #endif
 /* Might be earlier, this is when the named item bug began */
 #if PACKETVER >= 20131223
-	safestrncpy(p.name, status_get_name( *bl ), NAME_LENGTH);
+	char embedded_name[NAME_LENGTH] = {};
+	if( !clif_mob_ele_view_embedded_name( bl, embedded_name, sizeof( embedded_name ) ) ){
+		safestrncpy( embedded_name, status_get_name( *bl ), sizeof( embedded_name ) );
+	}
+	safestrncpy( p.name, embedded_name, NAME_LENGTH );
 #endif
 
 	clif_send( &p, sizeof( p ), tbl, target );
@@ -1339,7 +1394,11 @@ static void clif_spawn_unit( const block_list* bl, enum send_target target ){
 #endif
 /* Might be earlier, this is when the named item bug began */
 #if PACKETVER >= 20131223
-	safestrncpy( p.name, status_get_name( *bl ), NAME_LENGTH );
+	char embedded_name[NAME_LENGTH] = {};
+	if( !clif_mob_ele_view_embedded_name( bl, embedded_name, sizeof( embedded_name ) ) ){
+		safestrncpy( embedded_name, status_get_name( *bl ), sizeof( embedded_name ) );
+	}
+	safestrncpy( p.name, embedded_name, NAME_LENGTH );
 #endif
 
 	if( disguised( bl ) ){
@@ -1447,7 +1506,11 @@ static void clif_set_unit_walking( const block_list& bl, const map_session_data*
 #endif
 /* Might be earlier, this is when the named item bug began */
 #if PACKETVER >= 20131223
-	safestrncpy(p.name, status_get_name( bl ), NAME_LENGTH);
+	char embedded_name[NAME_LENGTH] = {};
+	if( !clif_mob_ele_view_embedded_name( &bl, embedded_name, sizeof( embedded_name ) ) ){
+		safestrncpy( embedded_name, status_get_name( bl ), sizeof( embedded_name ) );
+	}
+	safestrncpy( p.name, embedded_name, NAME_LENGTH );
 #endif
 
 	clif_send( &p, sizeof(p), tsd ? tsd : &bl, target );
@@ -9929,6 +9992,49 @@ void clif_refresh(map_session_data *sd)
 /// 0095 <id>.L <char name>.24B (ZC_ACK_REQNAME)
 /// 0195 <id>.L <char name>.24B <party name>.24B <guild name>.24B <position name>.24B (ZC_ACK_REQNAMEALL)
 /// 0a30 <id>.L <char name>.24B <party name>.24B <guild name>.24B <position name>.24B <title ID>.L (ZC_ACK_REQNAMEALL2)
+static const char* clif_mob_race_name( e_race race ){
+	switch( race ){
+		case RC_FORMLESS: return "Formless";
+		case RC_UNDEAD: return "Undead";
+		case RC_BRUTE: return "Brute";
+		case RC_PLANT: return "Plant";
+		case RC_INSECT: return "Insect";
+		case RC_FISH: return "Fish";
+		case RC_DEMON: return "Demon";
+		case RC_DEMIHUMAN: return "Demihuman";
+		case RC_ANGEL: return "Angel";
+		case RC_DRAGON: return "Dragon";
+		default: return "";
+	}
+}
+
+static const char* clif_mob_size_tag( e_size size ){
+	switch( size ){
+		case SZ_SMALL: return "[S]";
+		case SZ_MEDIUM: return "[M]";
+		case SZ_BIG: return "[L]";
+		default: return "";
+	}
+}
+
+static void clif_mob_ele_view_sync_lines( const mob_data& md, unit_data* ud ){
+	if( ud == nullptr ){
+		return;
+	}
+
+	char title_line[NAME_LENGTH] = {};
+	safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md.name, get_percentage( md.status.hp, md.status.max_hp ) );
+	safestrncpy( ud->title, title_line, NAME_LENGTH );
+
+	char name_line[NAME_LENGTH] = {};
+	safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md.status.race ) ), clif_mob_size_tag( static_cast<e_size>( md.status.size ) ) );
+	safestrncpy( ud->secondary_name, name_line, NAME_LENGTH );
+
+	if( md.status.def_ele >= ELE_NEUTRAL && md.status.def_ele < ELE_MAX ) {
+		ud->group_id = 51 + md.status.def_ele;
+	}
+}
+
 void clif_name( const block_list* src, const block_list* bl, send_target target ){
 	nullpo_retv( src );
 	nullpo_retv( bl );
@@ -10039,6 +10145,34 @@ void clif_name( const block_list* src, const block_list* bl, send_target target 
 				safestrncpy( packet.position_name, md->guardian_data->castle->castle_name, NAME_LENGTH );
 
 				clif_send(&packet, sizeof(packet), src, target);
+#if PACKETVER_MAIN_NUM >= 20180207 || PACKETVER_RE_NUM >= 20171129 || PACKETVER_ZERO_NUM >= 20171130
+			}else if( battle_config.mob_ele_view ){
+				PACKET_ZC_ACK_REQNAMEALL_NPC packet = { 0 };
+
+				packet.packet_id = HEADER_ZC_ACK_REQNAMEALL_NPC;
+				packet.gid = bl->id;
+				const unit_data* ud = unit_bl2ud(bl);
+
+				if( ud != nullptr ) {
+					clif_mob_ele_view_sync_lines( *md, const_cast<unit_data*>(ud) );
+					safestrncpy( packet.title, ud->title, NAME_LENGTH );
+					safestrncpy( packet.name, ud->secondary_name, NAME_LENGTH );
+					packet.groupId = ud->group_id;
+				}else{
+					char title_line[NAME_LENGTH] = {};
+					safesnprintf( title_line, sizeof(title_line), "%s (%u%%)", md->name, get_percentage( md->status.hp, md->status.max_hp ) );
+					safestrncpy( packet.title, title_line, NAME_LENGTH );
+
+					char name_line[NAME_LENGTH] = {};
+					safesnprintf( name_line, sizeof(name_line), "%s %s", clif_mob_race_name( static_cast<e_race>( md->status.race ) ), clif_mob_size_tag( static_cast<e_size>( md->status.size ) ) );
+					safestrncpy( packet.name, name_line, NAME_LENGTH );
+
+					if( md->status.def_ele >= ELE_NEUTRAL && md->status.def_ele < ELE_MAX )
+						packet.groupId = 51 + md->status.def_ele;
+				}
+
+				clif_send(&packet, sizeof(packet), src, target);
+#endif
 			}else if( battle_config.show_mob_info ){
 				PACKET_ZC_ACK_REQNAMEALL packet = { 0 };
 
